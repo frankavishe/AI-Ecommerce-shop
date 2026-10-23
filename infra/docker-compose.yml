@@ -1,0 +1,57 @@
+# App box: run from repo root with
+#   docker compose -f infra/docker-compose.yml --env-file .env up -d
+name: ai-shop
+
+x-backend: &backend
+  build: ../backend
+  env_file: ../.env
+  environment:
+    DATABASE_URL: postgres://shop:shop@db:5432/shop
+    REDIS_URL: redis://redis:6379/0
+  depends_on:
+    db:
+      condition: service_healthy
+    redis:
+      condition: service_started
+  volumes:
+    - ../backend:/app
+    - media:/app/media
+
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_DB: shop
+      POSTGRES_USER: shop
+      POSTGRES_PASSWORD: shop
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U shop -d shop"]
+      interval: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  api:
+    <<: *backend
+    command: sh -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
+    ports:
+      - "8000:8000"
+
+  worker:
+    <<: *backend
+    command: celery -A config worker -l info
+
+  beat:
+    <<: *backend
+    command: celery -A config beat -l info
+
+volumes:
+  pgdata:
+  media:
