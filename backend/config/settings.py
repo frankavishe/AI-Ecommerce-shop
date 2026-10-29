@@ -1,4 +1,5 @@
 from datetime import timedelta
+from decimal import Decimal
 from pathlib import Path
 
 import environ
@@ -27,6 +28,8 @@ INSTALLED_APPS = [
     "drf_spectacular",
     "apps.accounts",
     "apps.catalog",
+    "apps.orders",
+    "apps.payments",
 ]
 
 MIDDLEWARE = [
@@ -61,6 +64,8 @@ TEMPLATES = [
 DATABASES = {
     "default": env.db("DATABASE_URL", default="postgres://shop:shop@localhost:5432/shop"),
 }
+CACHES = {"default": env.cache("CACHE_URL", default="locmemcache://")}
+
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 AUTH_USER_MODEL = "accounts.User"
 
@@ -128,5 +133,23 @@ CELERY_BROKER_URL = env("REDIS_URL", default="redis://localhost:6379/0")
 CELERY_RESULT_BACKEND = CELERY_BROKER_URL
 CELERY_TASK_ALWAYS_EAGER = env.bool("CELERY_TASK_ALWAYS_EAGER", default=False)
 CELERY_TIMEZONE = TIME_ZONE
+CELERY_BEAT_SCHEDULE = {
+    "send-payment-reminders": {
+        "task": "apps.orders.tasks.send_payment_reminders",
+        "schedule": timedelta(minutes=5),
+    },
+    "expire-unpaid-orders": {
+        "task": "apps.orders.tasks.expire_unpaid_orders",
+        "schedule": timedelta(minutes=5),
+    },
+}
 
 SHOP_CURRENCY = "TZS"
+SHOP_DEFAULT_DELIVERY_FEE = Decimal(env("SHOP_DEFAULT_DELIVERY_FEE", default="5000"))
+ORDER_REMINDER_MINUTES = env.int("ORDER_REMINDER_MINUTES", default=30)
+ORDER_EXPIRY_MINUTES = env.int("ORDER_EXPIRY_MINUTES", default=120)
+
+CLICKPESA_BASE_URL = env("CLICKPESA_BASE_URL", default="https://api.clickpesa.com/third-parties")
+CLICKPESA_CLIENT_ID = env("CLICKPESA_CLIENT_ID", default="")
+CLICKPESA_API_KEY = env("CLICKPESA_API_KEY", default="")
+CLICKPESA_CHECKSUM_KEY = env("CLICKPESA_CHECKSUM_KEY", default="")
