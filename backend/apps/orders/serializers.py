@@ -160,3 +160,53 @@ class DeliveryRegionSerializer(serializers.ModelSerializer):
     class Meta:
         model = DeliveryRegion
         fields = ["name", "fee"]
+
+
+# --- Admin ------------------------------------------------------------------------------------
+
+
+class AdminPaymentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Payment
+        fields = [
+            "reference", "amount", "currency", "status", "checkout_link", "provider_ref",
+            "channel", "collected_amount", "created_at", "updated_at",
+        ]
+
+
+class AdminOrderEventSerializer(OrderEventSerializer):
+    actor = serializers.StringRelatedField()
+
+    class Meta(OrderEventSerializer.Meta):
+        fields = OrderEventSerializer.Meta.fields + ["actor"]
+
+
+class AdminOrderSummarySerializer(OrderSummarySerializer):
+    class Meta(OrderSummarySerializer.Meta):
+        fields = OrderSummarySerializer.Meta.fields + ["contact_name", "contact_phone", "region"]
+
+
+class AdminOrderSerializer(OrderSerializer):
+    events = AdminOrderEventSerializer(many=True, read_only=True)
+    payments = AdminPaymentSerializer(many=True, read_only=True)
+    user = serializers.StringRelatedField()
+
+    class Meta(OrderSerializer.Meta):
+        fields = OrderSerializer.Meta.fields + ["user", "reminder_sent_at", "payments"]
+        read_only_fields = fields
+
+
+class StatusChangeSerializer(serializers.Serializer):
+    status = serializers.ChoiceField(choices=Order.Status.choices)
+    note = serializers.CharField(max_length=255, required=False, allow_blank=True, default="")
+
+
+class AdminDeliveryRegionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DeliveryRegion
+        fields = ["id", "name", "fee", "is_active"]
+
+    def validate_fee(self, value):
+        if value < 0:
+            raise serializers.ValidationError("Fee cannot be negative.")
+        return value

@@ -70,9 +70,9 @@ come before the implementation.
 
 **Independent Test**: `pytest apps/orders/tests/test_admin_orders.py`
 
-- [ ] T028 [P] [US3] `backend/apps/orders/tests/test_admin_orders.py`: filter by status, paid, date range; search by number/phone/name; detail includes payments; paid → processing writes an event with the actor; cancelling an awaiting order returns stock once; cancelled → paid → 400 `invalid_transition`; a customer or guest gets 401/403 on every admin endpoint; region CRUD admin-only
-- [ ] T029 [US3] `OrderFilter` in `backend/apps/orders/filters.py` (`status`, `placed_after`, `placed_before`, `paid`)
-- [ ] T030 [US3] Admin viewsets (`IsShopAdmin`) in `backend/apps/orders/views.py`: `/admin/orders/` list and detail (with payments), `/admin/orders/<number>/status/`, `/admin/delivery-regions/` CRUD; register them in `urls.py`
+- [X] T028 [P] [US3] `backend/apps/orders/tests/test_admin_orders.py`: filter by status, paid, date range; search by number/phone/name; detail includes payments; paid → processing writes an event with the actor; cancelling an awaiting order returns stock once; cancelled → paid → 400 `invalid_transition`; a customer or guest gets 401/403 on every admin endpoint; region CRUD admin-only
+- [X] T029 [US3] `OrderFilter` in `backend/apps/orders/filters.py` (`status`, `placed_after`, `placed_before`, `paid`)
+- [X] T030 [US3] Admin viewsets (`IsShopAdmin`) in `backend/apps/orders/views.py`: `/admin/orders/` list and detail (with payments), `/admin/orders/<number>/status/`, `/admin/delivery-regions/` CRUD; register them in `urls.py`
 
 ## Phase 6: User Story 4 – Reminders and expiry (P4)
 

@@ -3,17 +3,24 @@ from django.core.exceptions import ValidationError as DjangoValidationError
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import OpenApiParameter, extend_schema, inline_serializer
-from rest_framework import generics, serializers, status
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import generics, serializers, status, viewsets
+from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.accounts.permissions import IsShopAdmin
 from apps.payments.services import start_payment
 
 from . import services
-from .models import Cart, DeliveryRegion, Order
+from .filters import OrderFilter, OrderSearchFilter
+from .models import Cart, DeliveryRegion, Order, OrderEvent
 from .serializers import (
     AddItemSerializer,
+    AdminDeliveryRegionSerializer,
+    AdminOrderSerializer,
+    AdminOrderSummarySerializer,
     CartSerializer,
     CheckoutSerializer,
     DeliveryRegionSerializer,
@@ -23,6 +30,7 @@ from .serializers import (
     OrderSummarySerializer,
     PayOrderSerializer,
     SetQuantitySerializer,
+    StatusChangeSerializer,
 )
 
 CART_TOKEN = OpenApiParameter(
@@ -195,3 +203,39 @@ class OrderPayView(APIView):
                 status=status.HTTP_503_SERVICE_UNAVAILABLE,
             )
         return Response({"payment_url": payment.checkout_link})
+
+
+class AdminOrderViewSet(ShopErrorMixin, viewsets.ReadOnlyModelViewSet):
+    permission_classes = [IsShopAdmin]
+    lookup_field = "number"
+    filter_backends = [DjangoFilterBackend, OrderSearchFilter]
+    filterset_class = OrderFilter
+    search_fields = ["number", "contact_phone", "contact_name"]
+
+    def get_queryset(self):
+        qs = Order.objects.all()
+        if self.action == "list":
+            return qs
+        return qs.select_related("user").prefetch_related("items", "events__actor", "payments")
+
+    def get_serializer_class(self):
+        return AdminOrderSummarySerializer if self.action == "list" else AdminOrderSerializer
+
+    @extend_schema(request=StatusChangeSerializer, responses=AdminOrderSerializer)
+    @action(detail=True, methods=["post"])
+    def status(self, request, number=None):
+        change = StatusChangeSerializer(data=request.data)
+        change.is_valid(raise_exception=True)
+        order = self.get_object()
+        services.transition(
+            order, change.validated_data["status"], OrderEvent.Source.ADMIN,
+            actor=request.user, note=change.validated_data["note"],
+        )
+        return Response(AdminOrderSerializer(self.get_queryset().get(pk=order.pk)).data)
+
+
+class AdminDeliveryRegionViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsShopAdmin]
+    serializer_class = AdminDeliveryRegionSerializer
+    queryset = DeliveryRegion.objects.all()
+    filter_backends = []
