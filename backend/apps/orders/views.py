@@ -1,19 +1,27 @@
 from django.conf import settings
+from django.core.exceptions import ValidationError as DjangoValidationError
+from django.http import Http404
+from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import OpenApiParameter, extend_schema, inline_serializer
-from rest_framework import serializers, status
+from rest_framework import generics, serializers, status
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.payments.services import start_payment
 
 from . import services
-from .models import DeliveryRegion
+from .models import Cart, DeliveryRegion, Order
 from .serializers import (
     AddItemSerializer,
     CartSerializer,
     CheckoutSerializer,
     DeliveryRegionSerializer,
+    MergeCartSerializer,
+    OrderLookupSerializer,
     OrderSerializer,
+    OrderSummarySerializer,
+    PayOrderSerializer,
     SetQuantitySerializer,
 )
 
@@ -76,6 +84,18 @@ class CartItemDetailView(ShopErrorMixin, APIView):
         return cart_response(cart)
 
 
+@extend_schema(request=MergeCartSerializer, responses=CartSerializer)
+class CartMergeView(ShopErrorMixin, APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        data = MergeCartSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        guest = get_object_or_404(Cart, token=data.validated_data["cart_token"], user=None)
+        cart = services.merge_carts(services.get_or_create_cart(request), guest)
+        return cart_response(cart)
+
+
 def order_with_payment(order, payment_error=None):
     data = OrderSerializer(order).data
     if payment_error:
@@ -108,3 +128,70 @@ class DeliveryRegionListView(APIView):
             "regions": DeliveryRegionSerializer(regions, many=True).data,
             "default_fee": f"{settings.SHOP_DEFAULT_DELIVERY_FEE:.2f}",
         })
+
+
+class OrderListView(generics.ListAPIView):
+    serializer_class = OrderSummarySerializer
+    permission_classes = [IsAuthenticated]
+    filter_backends = []
+
+    def get_queryset(self):
+        return Order.objects.filter(user=self.request.user)
+
+
+class OrderDetailView(generics.RetrieveAPIView):
+    serializer_class = OrderSerializer
+    permission_classes = [IsAuthenticated]
+    lookup_field = "number"
+
+    def get_queryset(self):
+        return Order.objects.filter(user=self.request.user).prefetch_related("items", "events")
+
+
+def order_for_phone(number, raw_phone):
+    """Guest access: the order number plus the checkout phone, or a 404 either way."""
+    try:
+        phone = services.normalize_phone(raw_phone)
+    except DjangoValidationError:
+        raise Http404
+    return get_object_or_404(Order, number=str(number).strip().upper(), contact_phone=phone)
+
+
+@extend_schema(request=OrderLookupSerializer, responses=OrderSerializer)
+class OrderLookupView(APIView):
+    def post(self, request):
+        data = OrderLookupSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        order = order_for_phone(data.validated_data["number"], data.validated_data["phone"])
+        return Response(OrderSerializer(order).data)
+
+
+@extend_schema(
+    request=PayOrderSerializer,
+    responses=inline_serializer("PaymentLink", {"payment_url": serializers.URLField()}),
+)
+class OrderPayView(APIView):
+    """Issue a fresh checkout link (new reference) for an order still awaiting payment."""
+
+    def post(self, request, number):
+        data = PayOrderSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        user = request.user
+        if user.is_authenticated and Order.objects.filter(number=number, user=user).exists():
+            order = Order.objects.get(number=number)
+        elif data.validated_data.get("phone"):
+            order = order_for_phone(number, data.validated_data["phone"])
+        else:
+            raise Http404
+        if order.status != Order.Status.AWAITING_PAYMENT:
+            return Response(
+                {"detail": "This order is not awaiting payment.", "code": "not_awaiting_payment"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        payment, error = start_payment(order)
+        if payment is None:
+            return Response(
+                {"detail": error, "code": "payment_unavailable"},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+        return Response({"payment_url": payment.checkout_link})

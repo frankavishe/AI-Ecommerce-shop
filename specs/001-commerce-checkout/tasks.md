@@ -62,9 +62,9 @@ come before the implementation.
 
 **Independent Test**: `pytest apps/orders/tests/test_customer_orders.py`
 
-- [ ] T025 [P] [US2] `backend/apps/orders/tests/test_customer_orders.py`: user cart persists across clients; merge sums quantities capped at stock and deletes the guest cart; checkout with `address_id` copies the address (a later edit doesn't change the order); another user's `address_id` → 400; list shows only own orders newest first; another user's order → 404; guest lookup with matching phone → 200, wrong phone → 404; `pay/` issues a new link with reference `P2`, refused when not awaiting payment
-- [ ] T026 [US2] Add `merge_carts(user_cart, guest_cart)` to `backend/apps/orders/services.py` and address checkout handling to `CheckoutSerializer`
-- [ ] T027 [US2] Add `/cart/merge/`, `/orders/`, `/orders/<number>/`, `/orders/lookup/`, `/orders/<number>/pay/` to `backend/apps/orders/views.py` and `urls.py`
+- [X] T025 [P] [US2] `backend/apps/orders/tests/test_customer_orders.py`: user cart persists across clients; merge sums quantities capped at stock and deletes the guest cart; checkout with `address_id` copies the address (a later edit doesn't change the order); another user's `address_id` → 400; list shows only own orders newest first; another user's order → 404; guest lookup with matching phone → 200, wrong phone → 404; `pay/` issues a new link with reference `P2`, refused when not awaiting payment
+- [X] T026 [US2] Add `merge_carts(user_cart, guest_cart)` to `backend/apps/orders/services.py` and address checkout handling to `CheckoutSerializer`
+- [X] T027 [US2] Add `/cart/merge/`, `/orders/`, `/orders/<number>/`, `/orders/lookup/`, `/orders/<number>/pay/` to `backend/apps/orders/views.py` and `urls.py`
 
 ## Phase 5: User Story 3 – Admin manages orders (P3)
 

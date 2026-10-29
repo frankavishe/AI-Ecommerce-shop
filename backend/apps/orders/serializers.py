@@ -46,6 +46,15 @@ class MergeCartSerializer(serializers.Serializer):
     cart_token = serializers.CharField()
 
 
+class OrderLookupSerializer(serializers.Serializer):
+    number = serializers.CharField(max_length=12)
+    phone = serializers.CharField(max_length=20)
+
+
+class PayOrderSerializer(serializers.Serializer):
+    phone = serializers.CharField(max_length=20, required=False)
+
+
 class CheckoutSerializer(serializers.Serializer):
     """Guest contact and address, or a saved address_id for logged-in customers.
 
