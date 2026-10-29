@@ -78,8 +78,8 @@ come before the implementation.
 
 **Independent Test**: `pytest apps/orders/tests/test_jobs.py`
 
-- [ ] T031 [P] [US4] `backend/apps/orders/tests/test_jobs.py`: an order unpaid after 30 minutes gets `reminder_sent_at` and one event, and a second run sends no second reminder; an order past `expires_at` becomes `expired` and its stock is returned; a successful payment confirmed after expiry → `needs_review`
-- [ ] T032 [US4] Tasks `send_payment_reminders` and `expire_unpaid_orders` in `backend/apps/orders/tasks.py` (each order handled in its own transaction with `select_for_update(skip_locked=True)`)
+- [X] T031 [P] [US4] `backend/apps/orders/tests/test_jobs.py`: an order unpaid after 30 minutes gets `reminder_sent_at` and one event, and a second run sends no second reminder; an order past `expires_at` becomes `expired` and its stock is returned; a successful payment confirmed after expiry → `needs_review`
+- [X] T032 [US4] Tasks `send_payment_reminders` and `expire_unpaid_orders` in `backend/apps/orders/tasks.py` (each order handled in its own transaction with `select_for_update(skip_locked=True)`)
 
 ## Phase 7: Polish
 
