@@ -127,6 +127,10 @@ SPECTACULAR_SETTINGS = {
     "TITLE": "AI Ecommerce Shop API",
     "VERSION": "0.1.0",
     "COMPONENT_SPLIT_REQUEST": True,
+    "ENUM_NAME_OVERRIDES": {
+        "OrderStatusEnum": "apps.orders.models.Order.Status",
+        "PaymentStatusEnum": "apps.payments.models.Payment.Status",
+    },
 }
 
 CELERY_BROKER_URL = env("REDIS_URL", default="redis://localhost:6379/0")

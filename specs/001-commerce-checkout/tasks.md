@@ -83,8 +83,8 @@ come before the implementation.
 
 ## Phase 7: Polish
 
-- [ ] T033 Run `pytest`, `python manage.py makemigrations --check --dry-run`, `python manage.py spectacular --file schema.yml --validate`; fix any issues
-- [ ] T034 [P] Mark specs/001-commerce-checkout/tasks.md done and update the project memory
+- [X] T033 Run `pytest`, `python manage.py makemigrations --check --dry-run`, `python manage.py spectacular --file schema.yml --validate`; fix any issues
+- [X] T034 [P] Mark specs/001-commerce-checkout/tasks.md done and update the project memory
 
 ## Dependencies
 
