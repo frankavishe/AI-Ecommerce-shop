@@ -13,9 +13,10 @@ from config.celery import app as celery_app
 
 @pytest.fixture(autouse=True)
 def _isolated_runtime(settings):
-    settings.CLICKPESA_CLIENT_ID = ""
-    settings.CLICKPESA_API_KEY = ""
-    settings.CLICKPESA_CHECKSUM_KEY = ""
+    settings.STAKABA_API_KEY = ""
+    settings.STAKABA_BASE_URL = "https://api.stakaba.test"
+    settings.STAKABA_WEBHOOK_TOKEN = "hook-secret"
+    settings.STAKABA_CONFIRM_VIA_API = False
     celery_app.conf.update(CELERY_TASK_ALWAYS_EAGER=True)  # namespaced key wins over task_always_eager
     cache.clear()
     yield
@@ -71,60 +72,82 @@ def region(db):
     return DeliveryRegion.objects.create(name="Dar es Salaam", fee=Decimal("3000"))
 
 
-class FakeClickPesa:
-    """In-memory ClickPesa API served through httpx.MockTransport."""
+class FakeStakaba:
+    """In-memory Stakaba API served through httpx.MockTransport.
+
+    Mobile money collections answer with `collection_status` (PENDING by default, like a live
+    USSD push waiting for the PIN). `pay()` sets what GET /transactions/{ref} returns.
+    """
 
     def __init__(self):
         self.calls = []
-        self.records = {}  # orderReference -> list of payment records
+        self.transactions = {}  # internalReference -> transaction record
         self.down = False
+        self.collection_status = "PENDING"
+        self.error = None  # (status, json body) returned for create calls
+        self._n = 0
 
     def handler(self, request):
         self.calls.append(request)
         if self.down:
             raise httpx.ConnectError("unreachable", request=request)
         path = request.url.path
-        if path.endswith("/generate-token"):
-            return httpx.Response(200, json={"success": True, "token": "Bearer test-token"})
-        if path.endswith("/checkout-link/generate-checkout-url"):
+        if request.method == "POST" and path.endswith(("/payments/card", "/payments/collection")):
+            if self.error:
+                return httpx.Response(self.error[0], json=self.error[1])
             body = json.loads(request.content)
-            return httpx.Response(
-                200, json={"checkoutLink": f"https://pay.test/{body['orderReference']}"}
-            )
-        if "/payments/" in path:
-            reference = path.rsplit("/", 1)[-1]
-            if reference not in self.records:
-                return httpx.Response(404, json={"message": "Not found"})
-            return httpx.Response(200, json=self.records[reference])
-        return httpx.Response(404)
+            self._n += 1
+            if path.endswith("/card"):
+                ref = f"STKC{self._n}"
+                return httpx.Response(201, json={
+                    "checkoutUrl": f"https://pay.test/{body['metadata']['orderId']}",
+                    "internalReference": ref,
+                })
+            ref = f"STKM{self._n}"
+            return httpx.Response(201, json={"internalReference": ref, "status": self.collection_status})
+        if request.method == "GET" and "/transactions/" in path:
+            ref = path.rsplit("/", 1)[-1]
+            if ref not in self.transactions:
+                return httpx.Response(404, json={"error": "NOT_FOUND", "message": "Not found"})
+            return httpx.Response(200, json=self.transactions[ref])
+        return httpx.Response(404, json={"detail": "Not Found"})
 
-    def pay(self, reference, amount, status="SUCCESS", currency="TZS"):
-        self.records[reference] = [{
-            "id": f"ID{reference}",
+    def record(self, ref, amount, status="SUCCESS", currency="TZS", order_id=None):
+        return {
+            "event": "transaction.success" if status == "SUCCESS" else "transaction.failed",
+            "internalReference": ref,
             "status": status,
-            "paymentReference": f"PR{reference}",
-            "orderReference": reference,
-            "collectedAmount": str(amount),
-            "collectedCurrency": currency,
-            "channel": "TIGO-PESA",
-            "message": "",
-        }]
+            "type": "COLLECTION",
+            "grossAmount": amount,
+            "stakabaFee": 125,
+            "netAmount": amount - 125,
+            "currency": currency,
+            "mobileNumber": "255712345678",
+            "network": "TigoPesa",
+            "providerReference": f"MP{ref}",
+            "metadata": {"orderId": order_id} if order_id else {},
+        }
+
+    def pay(self, ref, amount, **kwargs):
+        self.transactions[ref] = self.record(ref, amount, **kwargs)
 
     def requests_to(self, suffix):
         return [r for r in self.calls if r.url.path.endswith(suffix)]
 
+    def bodies(self, suffix):
+        return [json.loads(r.content) for r in self.requests_to(suffix)]
+
 
 @pytest.fixture
-def clickpesa(settings, monkeypatch):
-    """Configures ClickPesa credentials and routes every client call to a fake API."""
-    from apps.payments import clickpesa as module
+def stakaba(settings, monkeypatch):
+    """Configures a sandbox key and routes every client call to a fake Stakaba API."""
+    from apps.payments import stakaba as module
 
-    settings.CLICKPESA_CLIENT_ID = "cid"
-    settings.CLICKPESA_API_KEY = "key"
-    fake = FakeClickPesa()
+    settings.STAKABA_API_KEY = "sk_test_fake"
+    fake = FakeStakaba()
     monkeypatch.setattr(
         module, "get_client",
-        lambda: module.ClickPesaClient(transport=httpx.MockTransport(fake.handler)),
+        lambda: module.StakabaClient(transport=httpx.MockTransport(fake.handler)),
     )
     return fake
 

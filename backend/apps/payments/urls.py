@@ -1,7 +1,7 @@
 from django.urls import path
 
-from .views import ClickPesaWebhookView
+from .views import StakabaWebhookView
 
 urlpatterns = [
-    path("clickpesa/webhook/", ClickPesaWebhookView.as_view()),
+    path("stakaba/webhook/<str:token>/", StakabaWebhookView.as_view()),
 ]

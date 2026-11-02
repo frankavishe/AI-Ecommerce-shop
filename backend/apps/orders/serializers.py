@@ -4,6 +4,7 @@ from rest_framework import serializers
 
 from apps.catalog.models import Product
 from apps.payments.models import Payment
+from apps.payments.stakaba import NETWORKS
 
 from .models import DeliveryRegion, Order, OrderEvent, OrderItem
 from .services import normalize_phone
@@ -51,11 +52,34 @@ class OrderLookupSerializer(serializers.Serializer):
     phone = serializers.CharField(max_length=20)
 
 
-class PayOrderSerializer(serializers.Serializer):
+class PaymentChoiceSerializer(serializers.Serializer):
+    """How the customer wants to pay. Mobile money pushes a PIN prompt to the order's phone;
+    card returns a hosted checkout URL and needs an email."""
+
+    payment_method = serializers.ChoiceField(
+        choices=Payment.Method.choices, default=Payment.Method.MOBILE_MONEY
+    )
+    network = serializers.ChoiceField(
+        choices=[(n, n) for n in NETWORKS], required=False,
+        help_text="Mobile money network; guessed from the phone number when left out.",
+    )
+    email = serializers.EmailField(required=False, allow_blank=True)
+
+    @property
+    def payment(self):
+        data = self.validated_data
+        return {
+            "method": data["payment_method"],
+            "network": data.get("network"),
+            "email": data.get("email") or None,
+        }
+
+
+class PayOrderSerializer(PaymentChoiceSerializer):
     phone = serializers.CharField(max_length=20, required=False)
 
 
-class CheckoutSerializer(serializers.Serializer):
+class CheckoutSerializer(PaymentChoiceSerializer):
     """Guest contact and address, or a saved address_id for logged-in customers.
 
     Prices and totals are never accepted from the client.
@@ -93,6 +117,10 @@ class CheckoutSerializer(serializers.Serializer):
                 attrs["contact_phone"] = normalize_phone(attrs["contact_phone"])
             except DjangoValidationError as exc:
                 errors["contact_phone"] = exc.messages
+        if user.is_authenticated and not attrs.get("email"):
+            attrs["email"] = user.email or ""
+        if attrs["payment_method"] == Payment.Method.CARD and not attrs.get("email"):
+            errors["email"] = "An email address is needed to pay by card."
         if errors:
             raise serializers.ValidationError(errors)
         return attrs
@@ -100,7 +128,11 @@ class CheckoutSerializer(serializers.Serializer):
     @property
     def contact(self):
         data = self.validated_data
-        return {"name": data["contact_name"].strip(), "phone": data["contact_phone"]}
+        return {
+            "name": data["contact_name"].strip(),
+            "phone": data["contact_phone"],
+            "email": data.get("email") or "",
+        }
 
     @property
     def address(self):
@@ -139,7 +171,7 @@ class OrderSerializer(OrderSummarySerializer):
     class Meta:
         model = Order
         fields = [
-            "number", "status", "contact_name", "contact_phone",
+            "number", "status", "contact_name", "contact_phone", "contact_email",
             "region", "district", "street", "notes",
             "subtotal", "delivery_fee", "total", "currency",
             "placed_at", "paid_at", "expires_at", "items", "events", "payment_url",
@@ -169,8 +201,8 @@ class AdminPaymentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Payment
         fields = [
-            "reference", "amount", "currency", "status", "checkout_link", "provider_ref",
-            "channel", "collected_amount", "created_at", "updated_at",
+            "reference", "method", "amount", "currency", "status", "checkout_link",
+            "provider_ref", "channel", "receipt", "collected_amount", "created_at", "updated_at",
         ]
 
 

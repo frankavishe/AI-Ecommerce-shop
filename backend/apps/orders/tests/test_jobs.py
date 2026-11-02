@@ -53,12 +53,12 @@ def test_overdue_order_expires_and_returns_stock(make_order):
     assert keep.status == Order.Status.AWAITING_PAYMENT
 
 
-def test_payment_after_expiry_needs_review(make_order, clickpesa):
+def test_payment_after_expiry_needs_review(make_order, stakaba):
     order = age(make_order(), 121)
     payment, _ = start_payment(order)
     expire_unpaid_orders()
 
-    clickpesa.pay(payment.reference, 93000)
+    stakaba.pay(payment.provider_ref, 93000)
     confirm_payment(payment.id)
 
     payment.refresh_from_db()
@@ -68,13 +68,13 @@ def test_payment_after_expiry_needs_review(make_order, clickpesa):
     assert order.events.last().source == "provider"
 
 
-def test_payment_after_cancellation_is_recorded_on_the_timeline(make_order, clickpesa):
+def test_payment_after_cancellation_is_recorded_on_the_timeline(make_order, stakaba):
     from apps.orders.services import transition
 
     order = make_order()
     payment, _ = start_payment(order)
     transition(order, Order.Status.CANCELLED, "admin")
-    clickpesa.pay(payment.reference, 93000)
+    stakaba.pay(payment.provider_ref, 93000)
     confirm_payment(payment.id)
 
     order.refresh_from_db()

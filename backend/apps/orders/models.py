@@ -68,6 +68,7 @@ class Order(models.Model):
     )
     contact_name = models.CharField(max_length=120)
     contact_phone = models.CharField(max_length=16, validators=[phone_validator])
+    contact_email = models.EmailField(blank=True, help_text="Needed for card payments")
     region = models.CharField(max_length=80)
     district = models.CharField(max_length=80, blank=True)
     street = models.CharField(max_length=255)

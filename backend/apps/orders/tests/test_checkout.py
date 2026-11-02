@@ -26,7 +26,7 @@ def checkout(client, token, **overrides):
     return client.post("/api/checkout/", {**GUEST, **overrides}, format="json", HTTP_X_CART_TOKEN=token)
 
 
-def test_guest_checkout_creates_order_and_payment_link(api_client, cart_token, product, region, clickpesa):
+def test_guest_checkout_creates_order_and_payment_link(api_client, cart_token, product, region, stakaba):
     res = checkout(api_client, cart_token, total="1.00", subtotal="1.00", delivery_fee="0")
     assert res.status_code == 201, res.data
 
@@ -50,21 +50,53 @@ def test_guest_checkout_creates_order_and_payment_link(api_client, cart_token, p
 
     payment = Payment.objects.get()
     assert payment.reference == f"{order.number}P1" and payment.amount == 93000
+    # Mobile money is the default: a PIN prompt goes to the phone, there is no URL.
+    assert payment.method == "mobile_money" and payment.channel == "TigoPesa"
+    assert res.data["payment_url"] is None and res.data["payment_method"] == "mobile_money"
+    assert "PIN" in res.data["payment_message"]
+    assert stakaba.bodies("/payments/collection")[0]["mobileNumber"] == "255712345678"
+
+
+def test_card_checkout_returns_payment_url(api_client, cart_token, stakaba):
+    res = checkout(api_client, cart_token, payment_method="card", email="amina@example.com")
+    assert res.status_code == 201, res.data
+    order = Order.objects.get()
     assert res.data["payment_url"] == f"https://pay.test/{order.number}P1"
+    assert res.data["contact_email"] == "amina@example.com" and res.data["payment_method"] == "card"
 
 
-def test_region_match_is_case_insensitive(api_client, cart_token, region, clickpesa):
+def test_card_checkout_needs_email(api_client, cart_token, stakaba):
+    res = checkout(api_client, cart_token, payment_method="card")
+    assert res.status_code == 400 and "email" in res.data
+    assert not Order.objects.exists()
+
+
+def test_chosen_network_overrides_guess(api_client, cart_token, stakaba):
+    res = checkout(api_client, cart_token, network="AirtelMoney")
+    assert res.status_code == 201
+    assert Payment.objects.get().channel == "AirtelMoney"
+
+
+def test_declined_number_still_creates_order(api_client, cart_token, stakaba):
+    stakaba.collection_status = "FAILED"
+    res = checkout(api_client, cart_token)
+    assert res.status_code == 201
+    assert res.data["payment_error_code"] == "payment_failed"
+    assert Order.objects.get().status == Order.Status.AWAITING_PAYMENT
+
+
+def test_region_match_is_case_insensitive(api_client, cart_token, region, stakaba):
     res = checkout(api_client, cart_token, region="dar es salaam")
     assert res.data["delivery_fee"] == "3000.00"
 
 
-def test_unknown_region_uses_default_fee(api_client, cart_token, region, clickpesa, settings):
+def test_unknown_region_uses_default_fee(api_client, cart_token, region, stakaba, settings):
     res = checkout(api_client, cart_token, region="Mbeya")
     assert res.status_code == 201
     assert res.data["delivery_fee"] == "5000.00" and res.data["total"] == "95000.00"
 
 
-def test_empty_cart_rejected(api_client, clickpesa):
+def test_empty_cart_rejected(api_client, stakaba):
     token = api_client.get("/api/cart/").data["token"]
     res = checkout(api_client, token)
     assert res.status_code == 400 and res.data["code"] == "empty_cart"
@@ -83,17 +115,18 @@ def test_missing_street_rejected(api_client, cart_token):
     assert res.status_code == 400 and "street" in res.data
 
 
-def test_local_phone_is_normalised(api_client, cart_token, clickpesa):
+def test_local_phone_is_normalised(api_client, cart_token, stakaba):
     res = checkout(api_client, cart_token, contact_phone="0712 345 678")
     assert res.status_code == 201
     assert res.data["contact_phone"] == "+255712345678"
 
 
-def test_provider_down_still_creates_order(api_client, cart_token, clickpesa, product):
-    clickpesa.down = True
+def test_provider_down_still_creates_order(api_client, cart_token, stakaba, product):
+    stakaba.down = True
     res = checkout(api_client, cart_token)
     assert res.status_code == 201
     assert res.data["payment_url"] is None and res.data["payment_error"]
+    assert res.data["payment_error_code"] == "payment_unavailable"
     assert Order.objects.get().status == Order.Status.AWAITING_PAYMENT
     product.refresh_from_db()
     assert product.stock == 8
@@ -104,7 +137,7 @@ def test_unconfigured_provider_still_creates_order(api_client, cart_token):
     assert res.status_code == 201 and res.data["payment_url"] is None
 
 
-def test_inactive_product_blocks_checkout(api_client, cart_token, product, clickpesa):
+def test_inactive_product_blocks_checkout(api_client, cart_token, product, stakaba):
     product.is_active = False
     product.save()
     res = checkout(api_client, cart_token)
@@ -113,7 +146,7 @@ def test_inactive_product_blocks_checkout(api_client, cart_token, product, click
     assert not Order.objects.exists()
 
 
-def test_stock_dropped_after_adding_blocks_checkout(api_client, cart_token, product, make_product, clickpesa):
+def test_stock_dropped_after_adding_blocks_checkout(api_client, cart_token, product, make_product, stakaba):
     other = make_product(stock=5)
     api_client.post("/api/cart/items/", {"product_id": other.id}, format="json", HTTP_X_CART_TOKEN=cart_token)
     product.stock = 1
@@ -125,7 +158,7 @@ def test_stock_dropped_after_adding_blocks_checkout(api_client, cart_token, prod
     assert not Order.objects.exists()
 
 
-def test_checkout_uses_current_price(api_client, cart_token, product, clickpesa):
+def test_checkout_uses_current_price(api_client, cart_token, product, stakaba):
     product.price = 50000
     product.save()
     res = checkout(api_client, cart_token)

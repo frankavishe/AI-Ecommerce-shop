@@ -11,6 +11,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.accounts.permissions import IsShopAdmin
+from apps.payments.models import Payment
 from apps.payments.services import start_payment
 
 from . import services
@@ -104,10 +105,27 @@ class CartMergeView(ShopErrorMixin, APIView):
         return cart_response(cart)
 
 
-def order_with_payment(order, payment_error=None):
+MOBILE_MONEY_PROMPT = "Check your phone and enter your mobile money PIN to pay."
+
+
+def payment_message(payment):
+    if payment is None:
+        return None
+    if payment.status == Payment.Status.SUCCESS:
+        return "Payment received. Thank you!"
+    if payment.method == Payment.Method.MOBILE_MONEY:
+        return MOBILE_MONEY_PROMPT
+    return "Continue to the card payment page to pay."
+
+
+def order_with_payment(order, payment=None, payment_error=None):
+    order.refresh_from_db()
     data = OrderSerializer(order).data
+    data["payment_method"] = payment.method if payment else None
+    data["payment_message"] = payment_message(payment)
     if payment_error:
-        data["payment_error"] = payment_error
+        data["payment_error"] = payment_error.message
+        data["payment_error_code"] = payment_error.code
     return data
 
 
@@ -121,8 +139,8 @@ class CheckoutView(ShopErrorMixin, APIView):
         cart = services.get_or_create_cart(request)
         user = request.user if request.user.is_authenticated else None
         order = services.place_order(cart, checkout.contact, checkout.address, user=user)
-        _, error = start_payment(order)
-        return Response(order_with_payment(order, error), status=status.HTTP_201_CREATED)
+        payment, error = start_payment(order, **checkout.payment)
+        return Response(order_with_payment(order, payment, error), status=status.HTTP_201_CREATED)
 
 
 @extend_schema(responses=inline_serializer("DeliveryRegions", {
@@ -176,10 +194,19 @@ class OrderLookupView(APIView):
 
 @extend_schema(
     request=PayOrderSerializer,
-    responses=inline_serializer("PaymentLink", {"payment_url": serializers.URLField()}),
+    responses=inline_serializer("PaymentStarted", {
+        "payment_method": serializers.ChoiceField(choices=Payment.Method.choices),
+        "payment_status": serializers.ChoiceField(choices=Payment.Status.choices),
+        "payment_url": serializers.URLField(allow_null=True),
+        "message": serializers.CharField(),
+    }),
 )
 class OrderPayView(APIView):
-    """Issue a fresh checkout link (new reference) for an order still awaiting payment."""
+    """Start a fresh payment attempt (new reference) for an order still awaiting payment.
+
+    Card: returns payment_url to redirect to. Mobile money: payment_url is null and the customer
+    approves the prompt on their phone.
+    """
 
     def post(self, request, number):
         data = PayOrderSerializer(data=request.data)
@@ -196,13 +223,19 @@ class OrderPayView(APIView):
                 {"detail": "This order is not awaiting payment.", "code": "not_awaiting_payment"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        payment, error = start_payment(order)
+        payment, error = start_payment(order, **data.payment)
         if payment is None:
-            return Response(
-                {"detail": error, "code": "payment_unavailable"},
-                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            code = (
+                status.HTTP_503_SERVICE_UNAVAILABLE if error.code == "payment_unavailable"
+                else status.HTTP_400_BAD_REQUEST
             )
-        return Response({"payment_url": payment.checkout_link})
+            return Response({"detail": error.message, "code": error.code}, status=code)
+        return Response({
+            "payment_method": payment.method,
+            "payment_status": payment.status,
+            "payment_url": payment.checkout_link or None,
+            "message": payment_message(payment),
+        })
 
 
 class AdminOrderViewSet(ShopErrorMixin, viewsets.ReadOnlyModelViewSet):

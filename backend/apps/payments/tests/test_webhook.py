@@ -2,106 +2,109 @@ import pytest
 
 from apps.orders.models import Order
 from apps.payments import services
-from apps.payments.clickpesa import checksum
 from apps.payments.models import Payment
 
 pytestmark = pytest.mark.django_db
 
-URL = "/api/payments/clickpesa/webhook/"
+URL = "/api/payments/stakaba/webhook/hook-secret/"
 
 
 @pytest.fixture
-def payment(make_order, clickpesa):
+def payment(make_order, stakaba):
     payment, error = services.start_payment(make_order())
     assert error is None
     return payment
 
 
-def event(reference, status="SUCCESS", amount="93000", key=None, nested=False):
-    data = {"orderReference": reference, "status": status, "collectedAmount": amount,
-            "collectedCurrency": "TZS", "paymentReference": "PR1"}
-    body = {"event": "PAYMENT RECEIVED", "data": data}
-    if key and nested:
-        data["checksum"] = checksum(data, key)
-    elif key:
-        body["checksum"] = checksum(body, key)
-    return body
+def post(client, body, url=URL):
+    return client.post(url, body, format="json")
 
 
-def post(client, body):
-    return client.post(URL, body, format="json")
+def reload(payment):
+    payment.refresh_from_db()
+    payment.order.refresh_from_db()
+    return payment, payment.order
 
 
-def test_valid_checksum_marks_order_paid(api_client, payment, clickpesa, settings):
-    settings.CLICKPESA_CHECKSUM_KEY = "sig"
-    clickpesa.pay(payment.reference, 93000)
-    res = post(api_client, event(payment.reference, key="sig"))
+def test_success_webhook_marks_order_paid(api_client, payment, stakaba):
+    res = post(api_client, stakaba.record(payment.provider_ref, 93000, order_id=payment.reference))
     assert res.status_code == 200 and res.data == {"received": True}
 
-    payment.refresh_from_db()
-    order = payment.order
-    order.refresh_from_db()
+    payment, order = reload(payment)
     assert payment.status == Payment.Status.SUCCESS
-    assert payment.collected_amount == 93000 and payment.channel == "TIGO-PESA"
-    assert payment.provider_ref == f"PR{payment.reference}"
-    assert "webhook" in payment.raw_payload and "query" in payment.raw_payload
+    assert payment.collected_amount == 93000 and payment.channel == "TigoPesa"
+    assert payment.receipt == f"MP{payment.provider_ref}"
+    assert payment.raw_payload["webhook"]["stakabaFee"] == 125
     assert order.status == Order.Status.PAID and order.paid_at is not None
     assert order.events.filter(status="paid", source="provider").count() == 1
 
 
-def test_checksum_inside_data_is_accepted(api_client, payment, clickpesa, settings):
-    settings.CLICKPESA_CHECKSUM_KEY = "sig"
-    clickpesa.pay(payment.reference, 93000)
-    res = post(api_client, event(payment.reference, key="sig", nested=True))
-    assert res.status_code == 200
-    payment.order.refresh_from_db()
-    assert payment.order.status == Order.Status.PAID
-
-
-@pytest.mark.parametrize("tamper", ["wrong", "missing"])
-def test_bad_checksum_rejected(api_client, payment, clickpesa, settings, tamper):
-    settings.CLICKPESA_CHECKSUM_KEY = "sig"
-    clickpesa.pay(payment.reference, 93000)
-    body = event(payment.reference, key="sig")
-    if tamper == "wrong":
-        body["data"]["collectedAmount"] = "1"
-    else:
-        del body["checksum"]
-    res = post(api_client, body)
-    assert res.status_code == 400
-
-    payment.refresh_from_db()
+@pytest.mark.parametrize("url", [
+    "/api/payments/stakaba/webhook/wrong/",
+    "/api/payments/stakaba/webhook/",
+])
+def test_wrong_or_missing_token_is_404(api_client, payment, stakaba, url):
+    res = post(api_client, stakaba.record(payment.provider_ref, 93000), url=url)
+    assert res.status_code == 404
+    payment, order = reload(payment)
     assert payment.status == Payment.Status.PENDING and "webhook" not in payment.raw_payload
-    assert not clickpesa.requests_to(f"/payments/{payment.reference}")
-    payment.order.refresh_from_db()
-    assert payment.order.status == Order.Status.AWAITING_PAYMENT
 
 
-def test_unknown_reference_is_ignored(api_client, payment, clickpesa):
-    res = post(api_client, event("NOSUCHREF"))
+def test_webhook_disabled_without_token(api_client, payment, stakaba, settings):
+    settings.STAKABA_WEBHOOK_TOKEN = ""
+    assert post(api_client, stakaba.record(payment.provider_ref, 93000)).status_code == 404
+
+
+def test_failed_webhook_marks_attempt_failed_and_acknowledges(api_client, payment, stakaba):
+    res = post(api_client, stakaba.record(payment.provider_ref, 93000, status="FAILED"))
     assert res.status_code == 200
-    payment.refresh_from_db()
+    payment, order = reload(payment)
+    assert payment.status == Payment.Status.FAILED and order.status == Order.Status.AWAITING_PAYMENT
+
+
+def test_underpaid_webhook_is_a_mismatch(api_client, payment, stakaba):
+    post(api_client, stakaba.record(payment.provider_ref, 1000))
+    payment, order = reload(payment)
+    assert payment.status == Payment.Status.MISMATCH and order.status == Order.Status.NEEDS_REVIEW
+
+
+def test_unknown_reference_is_ignored(api_client, payment, stakaba):
+    res = post(api_client, stakaba.record("STKMNOPE", 93000, order_id="NOSUCHREF"))
+    assert res.status_code == 200
+    payment, _ = reload(payment)
     assert payment.status == Payment.Status.PENDING
 
 
-def test_replayed_webhook_is_idempotent(api_client, payment, clickpesa):
-    clickpesa.pay(payment.reference, 93000)
+def test_falls_back_to_order_id_when_reference_was_never_saved(api_client, payment, stakaba):
+    # The create call timed out, so we never stored Stakaba's internalReference.
+    Payment.objects.filter(pk=payment.pk).update(provider_ref="")
+    post(api_client, stakaba.record("STKMLATE", 93000, order_id=payment.reference))
+    payment, order = reload(payment)
+    assert payment.provider_ref == "STKMLATE" and payment.status == Payment.Status.SUCCESS
+
+
+def test_order_id_cannot_hijack_another_transaction(api_client, payment, stakaba):
+    post(api_client, stakaba.record("STKMOTHER", 93000, order_id=payment.reference))
+    payment, _ = reload(payment)
+    assert payment.status == Payment.Status.PENDING and payment.provider_ref == "STKM1"
+
+
+def test_replayed_webhook_is_idempotent(api_client, payment, stakaba):
     for _ in range(5):
-        assert post(api_client, event(payment.reference)).status_code == 200
+        assert post(api_client, stakaba.record(payment.provider_ref, 93000)).status_code == 200
     assert Payment.objects.filter(status=Payment.Status.SUCCESS).count() == 1
     assert payment.order.events.filter(status="paid").count() == 1
 
 
-def test_without_checksum_key_the_query_decides(api_client, payment, clickpesa):
-    # A forged body claims success, but ClickPesa reports the payment still processing.
-    clickpesa.pay(payment.reference, 93000, status="PROCESSING")
-    assert post(api_client, event(payment.reference)).status_code == 200
-    payment.refresh_from_db()
-    assert payment.status == Payment.Status.PENDING
-    payment.order.refresh_from_db()
-    assert payment.order.status == Order.Status.AWAITING_PAYMENT
+def test_with_api_confirmation_the_api_decides(api_client, payment, stakaba, settings):
+    settings.STAKABA_CONFIRM_VIA_API = True
+    # A forged body claims success, but Stakaba has no completed transaction.
+    stakaba.pay(payment.provider_ref, 93000, status="PENDING")
+    assert post(api_client, stakaba.record(payment.provider_ref, 93000)).status_code == 200
+    payment, order = reload(payment)
+    assert payment.status == Payment.Status.PENDING and order.status == Order.Status.AWAITING_PAYMENT
 
-    clickpesa.pay(payment.reference, 93000)
-    post(api_client, event(payment.reference))
-    payment.order.refresh_from_db()
-    assert payment.order.status == Order.Status.PAID
+    stakaba.pay(payment.provider_ref, 93000)
+    post(api_client, stakaba.record(payment.provider_ref, 93000))
+    payment, order = reload(payment)
+    assert order.status == Order.Status.PAID

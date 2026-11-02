@@ -243,7 +243,7 @@ def merge_carts(user_cart, guest_cart):
 def place_order(cart, contact, address, user=None):
     """Turn a cart into an order awaiting payment. Stock is taken here, atomically (research R7).
 
-    contact: {"name", "phone"}; address: {"region", "street", "district"?, "notes"?}.
+    contact: {"name", "phone", "email"?}; address: {"region", "street", "district"?, "notes"?}.
     """
     items = list(cart.items.select_related("product").order_by("product_id"))
     if not items:
@@ -269,6 +269,7 @@ def place_order(cart, contact, address, user=None):
             user=user,
             contact_name=contact["name"],
             contact_phone=contact["phone"],
+            contact_email=contact.get("email") or "",
             region=address["region"],
             district=address.get("district", ""),
             street=address["street"],

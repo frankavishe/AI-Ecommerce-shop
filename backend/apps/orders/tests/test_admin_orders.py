@@ -43,7 +43,7 @@ def test_search_by_number_phone_and_name(admin, make_order):
     assert numbers(admin.get("/api/admin/orders/?search=baraka")) == [b.number]
 
 
-def test_detail_includes_payments(admin, make_order, clickpesa):
+def test_detail_includes_payments(admin, make_order, stakaba):
     order = make_order()
     start_payment(order)
     res = admin.get(f"/api/admin/orders/{order.number}/")

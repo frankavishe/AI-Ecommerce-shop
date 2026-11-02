@@ -130,6 +130,8 @@ SPECTACULAR_SETTINGS = {
     "ENUM_NAME_OVERRIDES": {
         "OrderStatusEnum": "apps.orders.models.Order.Status",
         "PaymentStatusEnum": "apps.payments.models.Payment.Status",
+        "PaymentMethodEnum": "apps.payments.models.Payment.Method",
+        "MobileMoneyNetworkEnum": "apps.payments.stakaba.NETWORKS",
     },
 }
 
@@ -153,7 +155,11 @@ SHOP_DEFAULT_DELIVERY_FEE = Decimal(env("SHOP_DEFAULT_DELIVERY_FEE", default="50
 ORDER_REMINDER_MINUTES = env.int("ORDER_REMINDER_MINUTES", default=30)
 ORDER_EXPIRY_MINUTES = env.int("ORDER_EXPIRY_MINUTES", default=120)
 
-CLICKPESA_BASE_URL = env("CLICKPESA_BASE_URL", default="https://api.clickpesa.com/third-parties")
-CLICKPESA_CLIENT_ID = env("CLICKPESA_CLIENT_ID", default="")
-CLICKPESA_API_KEY = env("CLICKPESA_API_KEY", default="")
-CLICKPESA_CHECKSUM_KEY = env("CLICKPESA_CHECKSUM_KEY", default="")
+# Stakaba payments (apps/payments/stakaba.md). sk_test_ keys hit the sandbox, sk_live_ keys move money.
+STAKABA_API_KEY = env("STAKABA_API_KEY", default="")
+STAKABA_BASE_URL = env("STAKABA_BASE_URL", default="https://api.stakaba.com")
+# Secret path segment of the webhook URL (/api/payments/stakaba/webhook/<token>/). Webhooks are
+# unsigned, so with no token set the webhook is disabled.
+STAKABA_WEBHOOK_TOKEN = env("STAKABA_WEBHOOK_TOKEN", default="")
+# Confirm webhooks via GET /transactions/{ref}. Off until Stakaba accepts x-api-key there.
+STAKABA_CONFIRM_VIA_API = env.bool("STAKABA_CONFIRM_VIA_API", default=False)

@@ -44,7 +44,7 @@ def test_merge_unknown_token_is_404(auth_client, customer):
     assert res.status_code == 404
 
 
-def test_checkout_with_saved_address_copies_it(auth_client, customer, product, region, clickpesa):
+def test_checkout_with_saved_address_copies_it(auth_client, customer, product, region, stakaba):
     address = Address.objects.create(user=customer, region="Dar es Salaam", district="Ilala", street="Samora Ave 3")
     client = auth_client(customer)
     add(client, product, 1)
@@ -101,24 +101,29 @@ def test_guest_lookup_needs_matching_phone(api_client, make_order):
     assert res.status_code == 404
 
 
-def test_pay_issues_a_new_link(api_client, auth_client, customer, make_order, clickpesa):
+def test_pay_issues_a_new_link(api_client, auth_client, customer, make_order, stakaba):
     from apps.payments.services import start_payment
 
     order = make_order(user=customer)
     start_payment(order)
-    res = auth_client(customer).post(f"/api/orders/{order.number}/pay/", {}, format="json")
+    res = auth_client(customer).post(
+        f"/api/orders/{order.number}/pay/",
+        {"payment_method": "card", "email": "amina@example.com"}, format="json",
+    )
     assert res.status_code == 200, res.data
     assert res.data["payment_url"] == f"https://pay.test/{order.number}P2"
+    assert res.data["payment_method"] == "card" and res.data["payment_status"] == "pending"
     assert Payment.objects.filter(order=order).count() == 2
 
     guest_order = make_order(phone="+255712345678")
     res = api_client.post(f"/api/orders/{guest_order.number}/pay/", {"phone": "0712345678"}, format="json")
-    assert res.status_code == 200 and res.data["payment_url"].endswith("P1")
+    assert res.status_code == 200 and res.data["payment_url"] is None
+    assert res.data["payment_method"] == "mobile_money" and "PIN" in res.data["message"]
     res = api_client.post(f"/api/orders/{guest_order.number}/pay/", {"phone": "+255700000000"}, format="json")
     assert res.status_code == 404
 
 
-def test_pay_refused_when_not_awaiting_payment(auth_client, customer, make_order, clickpesa):
+def test_pay_refused_when_not_awaiting_payment(auth_client, customer, make_order, stakaba):
     order = make_order(user=customer)
     order.status = Order.Status.PAID
     order.save()
@@ -126,8 +131,23 @@ def test_pay_refused_when_not_awaiting_payment(auth_client, customer, make_order
     assert res.status_code == 400 and res.data["code"] == "not_awaiting_payment"
 
 
-def test_pay_when_provider_down(auth_client, customer, make_order, clickpesa):
-    clickpesa.down = True
+def test_pay_when_provider_down(auth_client, customer, make_order, stakaba):
+    stakaba.down = True
     order = make_order(user=customer)
     res = auth_client(customer).post(f"/api/orders/{order.number}/pay/", {}, format="json")
     assert res.status_code == 503 and res.data["code"] == "payment_unavailable"
+
+
+def test_pay_by_card_without_email_is_rejected(auth_client, customer, make_order, stakaba):
+    order = make_order(user=customer)
+    res = auth_client(customer).post(f"/api/orders/{order.number}/pay/", {"payment_method": "card"}, format="json")
+    assert res.status_code == 400 and res.data["code"] == "payment_rejected"
+
+
+def test_pay_by_card_uses_account_email(auth_client, customer, make_order, stakaba):
+    customer.email = "amina@example.com"
+    customer.save()
+    order = make_order(user=customer)
+    res = auth_client(customer).post(f"/api/orders/{order.number}/pay/", {"payment_method": "card"}, format="json")
+    assert res.status_code == 200 and res.data["payment_url"]
+    assert stakaba.bodies("/payments/card")[0]["customerEmail"] == "amina@example.com"
