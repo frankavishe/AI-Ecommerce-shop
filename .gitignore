@@ -9,3 +9,4 @@ node_modules/
 .next/
 .pytest_cache/
 *.sqlite3
+stakaba.md
