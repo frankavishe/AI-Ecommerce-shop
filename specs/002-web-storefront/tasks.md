@@ -45,7 +45,7 @@
 
 **Independent Test**: `npx playwright test e2e/guest-checkout.spec.ts`
 
-- [ ] T020 [P] [US1] `web/e2e/guest-checkout.spec.ts`:
+- [X] T020 [P] [US1] `web/e2e/guest-checkout.spec.ts`:
   - home shows categories and products;
   - search + category filter update the URL and the results;
   - add to cart, reload, and the cart persists;
@@ -54,26 +54,26 @@
   - mobile money checkout lands on `/orders/<n>` with the approve notice, then `simulatePayment` → "Paid" visible within 10 s with no reload;
   - card without email shows an email error;
   - switching language to sw changes the header and checkout labels
-- [ ] T021 [P] [US1] Unit tests `web/src/lib/order-status.test.ts` (status → i18n label key and tone for all 8 statuses `awaiting_payment, paid, processing, out_for_delivery, delivered, cancelled, expired, needs_review`; `canPay` only for `awaiting_payment`; `shouldPoll` only for `awaiting_payment`) and `web/src/lib/guest-orders.test.ts` (sessionStorage `sa_guest_orders` `{[number]: phone}` and `sa_last_order` get/set, tolerant of storage errors)
-- [ ] T022 [US1] Implement `web/src/lib/order-status.ts` and `web/src/lib/guest-orders.ts` so T021 passes
-- [ ] T023 [US1] Shop layout `web/src/app/(shop)/layout.tsx` with `web/src/components/shop/header.tsx` (logo, search box → `/products?search=`, cart badge from `useCart`, language switch, login/account link from `/api/session`) and footer. Responsive at 360 px
-- [ ] T024 [P] [US1] Cart queries `web/src/lib/queries/cart.ts`: `useCart`, `useAddItem`, `useUpdateItem`, `useRemoveItem`, `useClearCart`. Mutations replace the cart cache with the server response and show `ApiError.detail` via a toast
-- [ ] T025 [P] [US1] Components `web/src/components/shop/product-card.tsx` (image, name, `formatTZS` price, compare-at struck through when higher, out-of-stock badge), `price.tsx` and `pagination.tsx`
-- [ ] T026 [US1] Home `web/src/app/(shop)/page.tsx` (RSC: `categories/` + `products/?ordering=-created_at`, first 8) and catalog `web/src/app/(shop)/products/page.tsx` (RSC reading `search, category, min_price, max_price, in_stock, ordering, page`; filter sidebar/sheet as a client component writing URL params; empty state)
-- [ ] T027 [US1] Product page `web/src/app/(shop)/products/[slug]/page.tsx` (RSC, `notFound()` on 404, gallery, `description_sw` when locale is sw and non-empty, `generateMetadata`) with client `add-to-cart.tsx` (quantity stepper, disabled when out of stock)
-- [ ] T028 [US1] Cart page `web/src/app/(shop)/cart/page.tsx`: line items with quantity edit/remove, server subtotal, empty state, "Checkout" button
-- [ ] T029 [US1] Checkout `web/src/app/(shop)/checkout/page.tsx` + `web/src/components/shop/checkout-form.tsx` (react-hook-form + zod).
+- [X] T021 [P] [US1] Unit tests `web/src/lib/order-status.test.ts` (status → i18n label key and tone for all 8 statuses `awaiting_payment, paid, processing, out_for_delivery, delivered, cancelled, expired, needs_review`; `canPay` only for `awaiting_payment`; `shouldPoll` only for `awaiting_payment`) and `web/src/lib/guest-orders.test.ts` (sessionStorage `sa_guest_orders` `{[number]: phone}` and `sa_last_order` get/set, tolerant of storage errors)
+- [X] T022 [US1] Implement `web/src/lib/order-status.ts` and `web/src/lib/guest-orders.ts` so T021 passes
+- [X] T023 [US1] Shop layout `web/src/app/(shop)/layout.tsx` with `web/src/components/shop/header.tsx` (logo, search box → `/products?search=`, cart badge from `useCart`, language switch, login/account link from `/api/session`) and footer. Responsive at 360 px
+- [X] T024 [P] [US1] Cart queries `web/src/lib/queries/cart.ts`: `useCart`, `useAddItem`, `useUpdateItem`, `useRemoveItem`, `useClearCart`. Mutations replace the cart cache with the server response and show `ApiError.detail` via a toast
+- [X] T025 [P] [US1] Components `web/src/components/shop/product-card.tsx` (image, name, `formatTZS` price, compare-at struck through when higher, out-of-stock badge), `price.tsx` and `pagination.tsx`
+- [X] T026 [US1] Home `web/src/app/(shop)/page.tsx` (RSC: `categories/` + `products/?ordering=-created_at`, first 8) and catalog `web/src/app/(shop)/products/page.tsx` (RSC reading `search, category, min_price, max_price, in_stock, ordering, page`; filter sidebar/sheet as a client component writing URL params; empty state)
+- [X] T027 [US1] Product page `web/src/app/(shop)/products/[slug]/page.tsx` (RSC, `notFound()` on 404, gallery, `description_sw` when locale is sw and non-empty, `generateMetadata`) with client `add-to-cart.tsx` (quantity stepper, disabled when out of stock)
+- [X] T028 [US1] Cart page `web/src/app/(shop)/cart/page.tsx`: line items with quantity edit/remove, server subtotal, empty state, "Checkout" button
+- [X] T029 [US1] Checkout `web/src/app/(shop)/checkout/page.tsx` + `web/src/components/shop/checkout-form.tsx` (react-hook-form + zod).
   - Fields and checks: `contact_name` 1–120 chars; `contact_phone` matching `^(\+?255|0)[67]\d{8}$` after removing spaces; region select from `delivery-regions/` showing fees; optional `district`; `street` 1–255 chars; optional `notes`.
   - Payment: radio mobile_money (default) / card; `network` select Auto, Mpesa, AirtelMoney, TigoPesa or HaloPesa (omitted when Auto); `email` required when card.
   - Server field errors are mapped with `setError`; an empty cart redirects to `/cart`.
   - On 201: store guest proof, then redirect to `payment_url` (card) or go to `/orders/<n>?pending=1`.
-- [ ] T030 [US1] Order page `web/src/app/(shop)/orders/[number]/page.tsx` + `web/src/components/shop/order-view.tsx` + `order-timeline.tsx` + `pay-again-dialog.tsx`.
+- [X] T030 [US1] Order page `web/src/app/(shop)/orders/[number]/page.tsx` + `web/src/components/shop/order-view.tsx` + `order-timeline.tsx` + `pay-again-dialog.tsx`.
   - Loads the order with `orders/lookup/` (guest proof) or `GET orders/<n>/` (logged in). With neither, it redirects to `/track?number=`.
   - Polls every 5 s while `awaiting_payment`.
   - Shows the approve notice when `?pending=1` and `payment_error` text when present.
   - "Pay again" calls `orders/<n>/pay/` with the method choice (and `{phone}` for guests).
-- [ ] T031 [US1] `web/src/app/(shop)/orders/return/page.tsx`: client redirect to `/orders/<sa_last_order>`, or to `/track` when there is none
-- [ ] T032 [US1] Fill every US1 string in `en.ts`/`sw.ts`; run `npm run typecheck && npm test && npx playwright test e2e/guest-checkout.spec.ts`
+- [X] T031 [US1] `web/src/app/(shop)/orders/return/page.tsx`: client redirect to `/orders/<sa_last_order>`, or to `/track` when there is none
+- [X] T032 [US1] Fill every US1 string in `en.ts`/`sw.ts`; run `npm run typecheck && npm test && npx playwright test e2e/guest-checkout.spec.ts`
 
 **Checkpoint**: MVP. Commit `feat(web): guest storefront, cart, checkout and live order page (US1)`.
 

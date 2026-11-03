@@ -24,3 +24,18 @@ describe("formatTZS", () => {
     expect(formatTZS("abc")).toBe("—");
   });
 });
+
+import { addMoney } from "./money";
+
+describe("addMoney (display-only checkout estimate)", () => {
+  it("adds decimal strings exactly", () => {
+    expect(addMoney("45000.00", "3000.00")).toBe("48000.00");
+    expect(addMoney("0.10", "0.20")).toBe("0.30");
+    expect(addMoney("9007199254740993.00", "1.00")).toBe("9007199254740994.00");
+    expect(addMoney("1234.5", "0")).toBe("1234.50");
+  });
+  it("returns null for malformed input", () => {
+    expect(addMoney("abc", "1.00")).toBeNull();
+    expect(addMoney(undefined, "1.00")).toBeNull();
+  });
+});

@@ -11,3 +11,29 @@ export function formatTZS(value: string | number | null | undefined): string {
   const cents = /^0*$/.test(frac) ? "" : `.${frac.padEnd(2, "0")}`;
   return `${minus ? "-" : ""}TSh ${grouped}${cents}`;
 }
+
+const ZERO = BigInt(0);
+const HUNDRED = BigInt(100);
+
+function toCents(value: string | null | undefined): bigint | null {
+  const m = /^(-)?(\d+)(?:\.(\d{1,2}))?$/.exec(String(value ?? "").trim());
+  if (!m) return null;
+  const cents = BigInt(m[2]) * HUNDRED + BigInt((m[3] ?? "").padEnd(2, "0") || "0");
+  return m[1] ? -cents : cents;
+}
+
+/**
+ * Exact sum of server-provided decimal strings, used only to preview the checkout total
+ * (subtotal + region fee) before the order exists. Never sent to the server (FR-005).
+ */
+export function addMoney(...values: (string | null | undefined)[]): string | null {
+  let total = ZERO;
+  for (const v of values) {
+    const cents = toCents(v);
+    if (cents === null) return null;
+    total += cents;
+  }
+  const sign = total < ZERO ? "-" : "";
+  const abs = total < ZERO ? -total : total;
+  return `${sign}${abs / HUNDRED}.${String(abs % HUNDRED).padStart(2, "0")}`;
+}

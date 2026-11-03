@@ -2,11 +2,10 @@ import { defineConfig, devices } from "@playwright/test";
 
 /**
  * Isolated e2e stack (does not touch dev servers on :8000/:3000):
- *   fake Stakaba :8765  →  Django :8001 (test Postgres on :5434, eager Celery)  →  Next :3001
+ *   fake Stakaba :8765  →  Django :8001 (test Postgres on :5434, eager Celery)  →  Next :3100
  * Requires the test DB container from the 001 setup (see specs/002-web-storefront/quickstart.md).
  */
 const DB = process.env.E2E_DATABASE_URL ?? "postgres://shop:shop@localhost:5434/shop";
-const python = process.platform === "win32" ? ".venv\Scripts\python.exe" : ".venv/bin/python";
 
 export default defineConfig({
   testDir: "e2e",
@@ -16,7 +15,7 @@ export default defineConfig({
   workers: 1,
   reporter: [["list"]],
   use: {
-    baseURL: "http://localhost:3001",
+    baseURL: "http://localhost:3100",
     trace: "retain-on-failure",
   },
   projects: [{ name: "desktop", use: { ...devices["Desktop Chrome"] } }],
@@ -27,8 +26,7 @@ export default defineConfig({
       reuseExistingServer: false,
     },
     {
-      command: `${python} manage.py migrate --noinput && ${python} manage.py shell -c "exec(open('../web/e2e/seed.py').read())" && ${python} manage.py runserver 127.0.0.1:8001 --noreload`,
-      cwd: "../backend",
+      command: "node e2e/start-backend.mjs",
       url: "http://127.0.0.1:8001/api/delivery-regions/",
       timeout: 180_000,
       reuseExistingServer: false,
@@ -44,8 +42,8 @@ export default defineConfig({
       },
     },
     {
-      command: "npx next dev --port 3001",
-      url: "http://localhost:3001",
+      command: "npx next dev --port 3100",
+      url: "http://localhost:3100",
       timeout: 180_000,
       reuseExistingServer: false,
       env: { DJANGO_API_URL: "http://127.0.0.1:8001", NEXT_DIST_DIR: ".next-e2e" },

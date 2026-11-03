@@ -3,7 +3,7 @@
 import http from "node:http";
 
 const port = Number(process.env.FAKE_STAKABA_PORT ?? 8765);
-const webBase = process.env.E2E_WEB_URL ?? "http://localhost:3001";
+const webBase = process.env.E2E_WEB_URL ?? "http://localhost:3100";
 const payments = [];
 let n = 0;
 

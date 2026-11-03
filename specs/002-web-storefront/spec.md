@@ -90,7 +90,7 @@ A shop admin logs in and sees a dashboard with counts of orders awaiting payment
 
 **Cart and checkout**
 - **FR-004**: Shoppers MUST be able to add, change quantity, remove and empty cart items. The cart MUST persist for guests on the same browser and for logged-in customers across devices.
-- **FR-005**: All prices, line totals, delivery fees and order totals shown MUST be the values returned by the server. The site MUST NOT compute or send prices.
+- **FR-005**: All prices, line totals, delivery fees and order totals shown MUST be the values returned by the server, and the site MUST NOT send prices. The only exception is the checkout total shown before the order exists: an exact display-only sum of the server subtotal and the chosen region's server fee. Once placed, the order page shows the server's total.
 - **FR-006**: Checkout MUST collect contact name, phone, region (from the active delivery regions, showing each fee), optional district, street and optional notes. Logged-in customers can instead pick a saved address.
 - **FR-007**: Checkout MUST offer mobile money (default) with an optional network override (M-Pesa, Airtel Money, Tigo Pesa, HaloPesa), and card, which requires an email.
 - **FR-008**: After placing an order, card payments MUST redirect to the hosted payment page. Mobile money MUST show the order page with instructions to approve the prompt on the phone.
