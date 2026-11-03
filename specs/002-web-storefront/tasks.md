@@ -81,17 +81,17 @@
 
 **Independent Test**: `npx playwright test e2e/account.spec.ts`
 
-- [ ] T033 [P] [US2] `web/e2e/account.spec.ts`:
+- [X] T033 [P] [US2] `web/e2e/account.spec.ts`:
   - guest adds an item → registers → the cart still has the item (merge);
   - add an address → checkout with the saved address shows the prefilled name and phone → order appears in `/account/orders`;
   - logout → `/account` redirects to `/login?next=/account`;
   - `/track` with the right phone shows the order, and a wrong phone shows the generic not-found;
   - a wrong password shows a single generic error
-- [ ] T034 [US2] Login and register pages `web/src/app/(shop)/login/page.tsx`, `web/src/app/(shop)/register/page.tsx` (`username` required, `password` ≥ 8 chars, email format, phone, `preferred_language`). They post to `/api/session/*`, invalidate the session and cart queries, and redirect to `next` or `/account`
-- [ ] T035 [US2] Account area `web/src/app/(shop)/account/layout.tsx` (tabs, logout button → `/api/session/logout` → clear queries → `/`), `page.tsx` (profile edit via `auth/me/` PATCH), `addresses/page.tsx` (CRUD `auth/addresses/` with dialog form), `orders/page.tsx` (paginated `orders/`, newest first, links to `/orders/<n>`)
-- [ ] T036 [US2] Saved-address picker in `checkout-form.tsx` for logged-in users (sends `address_id`; name and phone prefilled from the session user)
-- [ ] T037 [US2] Track page `web/src/app/(shop)/track/page.tsx`: number + phone form → `orders/lookup/`. On 200 it stores guest proof and goes to `/orders/<n>`; on 404 it shows a generic message
-- [ ] T038 [US2] Fill US2 strings in both dictionaries; run typecheck, unit tests and `e2e/account.spec.ts`
+- [X] T034 [US2] Login and register pages `web/src/app/(shop)/login/page.tsx`, `web/src/app/(shop)/register/page.tsx` (`username` required, `password` ≥ 8 chars, email format, phone, `preferred_language`). They post to `/api/session/*`, invalidate the session and cart queries, and redirect to `next` or `/account`
+- [X] T035 [US2] Account area `web/src/app/(shop)/account/layout.tsx` (tabs, logout button → `/api/session/logout` → clear queries → `/`), `page.tsx` (profile edit via `auth/me/` PATCH), `addresses/page.tsx` (CRUD `auth/addresses/` with dialog form), `orders/page.tsx` (paginated `orders/`, newest first, links to `/orders/<n>`)
+- [X] T036 [US2] Saved-address picker in `checkout-form.tsx` for logged-in users (sends `address_id`; name and phone prefilled from the session user)
+- [X] T037 [US2] Track page `web/src/app/(shop)/track/page.tsx`: number + phone form → `orders/lookup/`. On 200 it stores guest proof and goes to `/orders/<n>`; on 404 it shows a generic message
+- [X] T038 [US2] Fill US2 strings in both dictionaries; run typecheck, unit tests and `e2e/account.spec.ts`
 
 **Checkpoint**: commit `feat(web): accounts, saved addresses, order history and tracking (US2)`.
 

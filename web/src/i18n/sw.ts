@@ -200,6 +200,9 @@ export const sw: Dictionary = {
     date: "Tarehe",
     total: "Jumla",
     view: "Ona",
+    status: "Hali",
+    deleteConfirm: "Futa anwani hii?",
+    yesDelete: "Ndiyo, futa",
   },
   languages: {
     en: "English",

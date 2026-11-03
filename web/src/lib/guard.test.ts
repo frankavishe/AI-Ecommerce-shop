@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { guard } from "./guard";
+import { guard, safeNext } from "./guard";
 
 const now = Math.floor(Date.now() / 1000);
 function jwt(payload: object) {
@@ -44,5 +44,17 @@ describe("guard", () => {
 
   it("treats forged/garbage tokens as anonymous", () => {
     expect(guard("/admin", "", "garbage")).toEqual({ action: "redirect", to: "/login?next=%2Fadmin" });
+  });
+});
+
+describe("safeNext", () => {
+  it("keeps same-origin paths", () => {
+    expect(safeNext("/account/orders?page=2")).toBe("/account/orders?page=2");
+  });
+
+  it("rejects other origins and junk", () => {
+    for (const bad of [null, undefined, "", "account", "//evil.com", "/\\evil.com", "https://evil.com", "/a\nb"]) {
+      expect(safeNext(bad)).toBeNull();
+    }
   });
 });

@@ -24,3 +24,10 @@ export function guard(pathname: string, search: string, access?: string, refresh
   }
   return { action: "next" };
 }
+
+/** A post-login target limited to same-origin paths (no `//host`, no schemes, no backslashes). */
+export function safeNext(next: string | null | undefined): string | null {
+  if (!next || !next.startsWith("/") || next.startsWith("//") || next.includes("\\")) return null;
+  if (/[\u0000-\u001f]/.test(next)) return null;
+  return next;
+}

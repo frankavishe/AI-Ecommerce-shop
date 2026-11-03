@@ -198,6 +198,9 @@ export const en = {
     date: "Date",
     total: "Total",
     view: "View",
+    status: "Status",
+    deleteConfirm: "Delete this address?",
+    yesDelete: "Yes, delete",
   },
   languages: {
     en: "English",

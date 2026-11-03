@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
+import { Field, inputClass as input } from "@/components/shop/form-field";
 import { PanelSkeleton } from "@/components/shop/skeletons";
 import { Button } from "@/components/ui/button";
 import { useT } from "@/i18n/client";
@@ -16,6 +17,7 @@ import { ApiError } from "@/lib/api/errors";
 import type { Address, DeliveryRegions, Paginated, PlacedOrder } from "@/lib/api/types";
 import { rememberGuestOrder, setLastOrder } from "@/lib/guest-orders";
 import { addMoney, formatTZS } from "@/lib/money";
+import { stripPhone, TZ_PHONE } from "@/lib/phone";
 import { cartKey, useCart } from "@/lib/queries/cart";
 import { useSession } from "@/lib/queries/session";
 import { cn } from "@/lib/utils";
@@ -27,7 +29,6 @@ export const NETWORKS = [
   { value: "HaloPesa", label: "HaloPesa" },
 ] as const;
 
-export const TZ_PHONE = /^(\+?255|0)[67]\d{8}$/;
 const NEW_ADDRESS = "new";
 
 function schema(t: Dictionary, savedAddress: boolean) {
@@ -37,7 +38,7 @@ function schema(t: Dictionary, savedAddress: boolean) {
       contact_name: required(120),
       contact_phone: z
         .string()
-        .transform((v) => v.replace(/[\s-]/g, ""))
+        .transform(stripPhone)
         .refine((v) => TZ_PHONE.test(v), t.checkout.invalidPhone),
       email: z.string().trim().refine((v) => !v || z.email().safeParse(v).success, t.checkout.invalidEmail),
       region: savedAddress ? z.string() : required(80),
@@ -55,45 +56,6 @@ function schema(t: Dictionary, savedAddress: boolean) {
 }
 type Values = z.input<ReturnType<typeof schema>>;
 type Parsed = z.output<ReturnType<typeof schema>>;
-
-const input =
-  "h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 aria-invalid:border-destructive";
-
-function Field({
-  id,
-  label,
-  error,
-  hint,
-  optional,
-  children,
-}: {
-  id: string;
-  label: string;
-  error?: string;
-  hint?: string;
-  optional?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="flex flex-col gap-1.5">
-      <label htmlFor={id} className="text-sm font-medium">
-        {label}
-        {optional && <span className="font-normal text-muted-foreground"> ({optional})</span>}
-      </label>
-      {children}
-      {hint && !error && (
-        <p id={`${id}-hint`} className="text-xs text-muted-foreground">
-          {hint}
-        </p>
-      )}
-      {error && (
-        <p id={`${id}-error`} role="alert" className="text-sm text-destructive">
-          {error}
-        </p>
-      )}
-    </div>
-  );
-}
 
 export function CheckoutForm() {
   const { t } = useT();
