@@ -11,6 +11,7 @@ import { describedBy, Field, inputClass } from "@/components/shop/form-field";
 import { PanelSkeleton } from "@/components/shop/skeletons";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useT } from "@/i18n/client";
 import type { Dictionary } from "@/i18n/config";
@@ -86,63 +87,68 @@ function AddressDialog({
         <DialogHeader>
           <DialogTitle>{address ? t.account.editAddress : t.account.addAddress}</DialogTitle>
         </DialogHeader>
-        <form noValidate onSubmit={onSubmit} className="flex flex-col gap-4" aria-busy={formState.isSubmitting}>
-          <Field id="label" label={t.account.label} hint={t.account.labelHint} optional={t.common.optional}>
-            <input id="label" className={inputClass} aria-describedby={describedBy("label", false, true)} {...register("label")} />
-          </Field>
-          <Field id="region" label={t.checkout.region} error={errors.region?.message}>
-            <select
-              id="region"
-              className={inputClass}
-              aria-invalid={!!errors.region}
-              aria-describedby={describedBy("region", !!errors.region)}
-              {...register("region")}
-            >
-              <option value="">{t.checkout.chooseRegion}</option>
-              {extra.map((name) => (
-                <option key={name} value={name}>
-                  {name}
-                </option>
-              ))}
-              {regions.data?.regions.map((r) => (
-                <option key={r.name} value={r.name}>
-                  {r.name} · {formatTZS(r.fee)}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <Field id="district" label={t.checkout.district} optional={t.common.optional}>
-            <input id="district" autoComplete="address-level2" className={inputClass} {...register("district")} />
-          </Field>
-          <Field id="street" label={t.checkout.street} error={errors.street?.message}>
-            <input
-              id="street"
-              autoComplete="street-address"
-              className={inputClass}
-              aria-invalid={!!errors.street}
-              aria-describedby={describedBy("street", !!errors.street)}
-              {...register("street")}
-            />
-          </Field>
-          <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" className="size-4 accent-primary" {...register("is_default")} />
-            {t.account.makeDefault}
-          </label>
-          {formError && (
-            <p role="alert" className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-              {formError}
-            </p>
-          )}
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              {t.common.cancel}
-            </Button>
-            <Button type="submit" disabled={formState.isSubmitting}>
-              {formState.isSubmitting && <Loader2 className="size-4 animate-spin" />}
-              {t.common.save}
-            </Button>
-          </DialogFooter>
-        </form>
+        {regions.isLoading ? (
+          // Options must exist before the saved region is applied to the <select>.
+          <Skeleton className="h-64 w-full" />
+        ) : (
+          <form noValidate onSubmit={onSubmit} className="flex flex-col gap-4" aria-busy={formState.isSubmitting}>
+            <Field id="label" label={t.account.label} hint={t.account.labelHint} optional={t.common.optional}>
+              <input id="label" className={inputClass} aria-describedby={describedBy("label", false, true)} {...register("label")} />
+            </Field>
+            <Field id="region" label={t.checkout.region} error={errors.region?.message}>
+              <select
+                id="region"
+                className={inputClass}
+                aria-invalid={!!errors.region}
+                aria-describedby={describedBy("region", !!errors.region)}
+                {...register("region")}
+              >
+                <option value="">{t.checkout.chooseRegion}</option>
+                {extra.map((name) => (
+                  <option key={name} value={name}>
+                    {name}
+                  </option>
+                ))}
+                {regions.data?.regions.map((r) => (
+                  <option key={r.name} value={r.name}>
+                    {r.name} · {formatTZS(r.fee)}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field id="district" label={t.checkout.district} optional={t.common.optional}>
+              <input id="district" autoComplete="address-level2" className={inputClass} {...register("district")} />
+            </Field>
+            <Field id="street" label={t.checkout.street} error={errors.street?.message}>
+              <input
+                id="street"
+                autoComplete="street-address"
+                className={inputClass}
+                aria-invalid={!!errors.street}
+                aria-describedby={describedBy("street", !!errors.street)}
+                {...register("street")}
+              />
+            </Field>
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" className="size-4 accent-primary" {...register("is_default")} />
+              {t.account.makeDefault}
+            </label>
+            {formError && (
+              <p role="alert" className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+                {formError}
+              </p>
+            )}
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                {t.common.cancel}
+              </Button>
+              <Button type="submit" disabled={formState.isSubmitting}>
+                {formState.isSubmitting && <Loader2 className="size-4 animate-spin" />}
+                {t.common.save}
+              </Button>
+            </DialogFooter>
+          </form>
+        )}
       </DialogContent>
     </Dialog>
   );

@@ -17,6 +17,7 @@ import { formatDateTime } from "@/lib/dates";
 import { formatTZS } from "@/lib/money";
 import { NEXT_STATUSES, ORDER_STATUSES } from "@/lib/order-status";
 import { adminKeys, useAdminOrder } from "@/lib/queries/admin";
+import { cn } from "@/lib/utils";
 
 function StatusDialog({ order, open, onOpenChange }: { order: AdminOrder; open: boolean; onOpenChange: (o: boolean) => void }) {
   const qc = useQueryClient();
@@ -89,7 +90,7 @@ function StatusDialog({ order, open, onOpenChange }: { order: AdminOrder; open: 
               rows={3}
               maxLength={500}
               aria-describedby="status-note-hint"
-              className={`${inputClass} h-auto py-2`}
+              className={cn(inputClass, "h-auto py-2")}
               value={note}
               onChange={(e) => setNote(e.target.value)}
             />
@@ -166,7 +167,7 @@ export function AdminOrderDetail({ number }: { number: string }) {
         }
       />
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="flex flex-col gap-6">
           <Panel title="Items">
             <div className={tableWrap}>
@@ -228,12 +229,12 @@ export function AdminOrderDetail({ number }: { number: string }) {
                       <tr key={p.reference}>
                         <td className={`${td} font-mono text-xs`}>{p.reference}</td>
                         <td className={td}>
-                          {p.method === "card" ? "Card" : "Mobile money"}
+                          <span className="whitespace-nowrap">{p.method === "card" ? "Card" : "Mobile money"}</span>
                           {p.channel && <span className="block text-xs text-muted-foreground">{p.channel}</span>}
                         </td>
                         <td className={`${td} capitalize`}>{p.status?.replace(/_/g, " ") ?? "—"}</td>
                         <td className={`${td} font-mono text-xs`}>{p.receipt || "—"}</td>
-                        <td className={`${td} text-right tabular-nums`}>
+                        <td className={`${td} whitespace-nowrap text-right tabular-nums`}>
                           {formatTZS(p.amount)}
                           {p.collected_amount && p.collected_amount !== p.amount && (
                             <span className="block text-xs text-amber-700">collected {formatTZS(p.collected_amount)}</span>

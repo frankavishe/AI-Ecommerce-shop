@@ -17,6 +17,7 @@ import type { Order } from "@/lib/api/types";
 import { rememberGuestOrder } from "@/lib/guest-orders";
 import { stripPhone, TZ_PHONE } from "@/lib/phone";
 import { orderKey } from "@/lib/queries/orders";
+import { cn } from "@/lib/utils";
 
 function schema(t: Dictionary) {
   return z.object({
@@ -70,7 +71,7 @@ export function TrackForm({ initialNumber }: { initialNumber: string }) {
             id="number"
             autoCapitalize="characters"
             autoComplete="off"
-            className={`${inputClass} uppercase`}
+            className={cn(inputClass, "uppercase")}
             aria-invalid={!!errors.number}
             aria-describedby={describedBy("number", !!errors.number)}
             {...register("number")}

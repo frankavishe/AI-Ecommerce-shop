@@ -12,12 +12,14 @@ import { z } from "zod";
 import { refreshCatalog } from "@/app/admin/actions";
 import { FormError } from "@/components/admin/ui";
 import { describedBy, Field, inputClass } from "@/components/shop/form-field";
+import { PanelSkeleton } from "@/components/shop/skeletons";
 import { Button } from "@/components/ui/button";
 import { bff } from "@/lib/api/client";
 import type { AdminProduct } from "@/lib/api/types";
 import { applyServerErrors } from "@/lib/forms";
 import { compareMoney, isMoney } from "@/lib/money";
 import { adminKeys, useAdminCategories } from "@/lib/queries/admin";
+import { cn } from "@/lib/utils";
 
 const count = (label: string) =>
   z
@@ -141,10 +143,14 @@ export function ProductForm({ product }: { product?: AdminProduct }) {
     </Field>
   );
 
+  // The category <select> must have its options before the form value is applied, or the browser
+  // shows (and a save would send) "No category".
+  if (categories.isLoading) return <PanelSkeleton />;
+
   return (
-    <form noValidate onSubmit={onSubmit} className="grid gap-6 lg:grid-cols-[1fr_300px]" aria-busy={formState.isSubmitting}>
+    <form noValidate onSubmit={onSubmit} className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_300px]" aria-busy={formState.isSubmitting}>
       <div className="flex flex-col gap-6">
-        <fieldset className="flex flex-col gap-4 rounded-xl border bg-card p-5">
+        <fieldset className="flex min-w-0 flex-col gap-4 rounded-xl border bg-card p-5">
           <legend className="px-1 font-semibold">Details</legend>
           {text("name", "Name")}
           <div className="grid gap-4 sm:grid-cols-2">
@@ -162,18 +168,18 @@ export function ProductForm({ product }: { product?: AdminProduct }) {
             </Field>
           </div>
           <Field id="description" label="Description (English)" optional="optional">
-            <textarea id="description" rows={4} className={`${inputClass} h-auto py-2`} {...register("description")} />
+            <textarea id="description" rows={4} className={cn(inputClass, "h-auto py-2")} {...register("description")} />
           </Field>
           <Field id="description_sw" label="Description (Swahili)" optional="optional">
-            <textarea id="description_sw" rows={4} className={`${inputClass} h-auto py-2`} {...register("description_sw")} />
+            <textarea id="description_sw" rows={4} className={cn(inputClass, "h-auto py-2")} {...register("description_sw")} />
           </Field>
           {text("tags", "Tags", {}, { hint: "Comma-separated search words, English and Swahili", optional: true })}
         </fieldset>
 
         {!product && (
-          <fieldset className="flex flex-col gap-3 rounded-xl border bg-card p-5">
+          <fieldset className="flex min-w-0 flex-col gap-3 rounded-xl border bg-card p-5">
             <legend className="px-1 font-semibold">Images</legend>
-            <Field id="uploaded_images" label="Images" hint="JPEG or PNG. You can add more, set alt text and reorder after saving.">
+            <Field id="uploaded_images" label="Upload images" hint="JPEG or PNG. You can add more, set alt text and reorder after saving.">
               <input
                 id="uploaded_images"
                 type="file"
@@ -194,7 +200,7 @@ export function ProductForm({ product }: { product?: AdminProduct }) {
       </div>
 
       <div className="flex flex-col gap-6">
-        <fieldset className="flex flex-col gap-4 rounded-xl border bg-card p-5">
+        <fieldset className="flex min-w-0 flex-col gap-4 rounded-xl border bg-card p-5">
           <legend className="px-1 font-semibold">Price and stock</legend>
           {text("price", "Price (TSh)", { inputMode: "decimal" })}
           {text("compare_at_price", "Compare-at price", { inputMode: "decimal" }, { hint: "Shown struck through when higher", optional: true })}

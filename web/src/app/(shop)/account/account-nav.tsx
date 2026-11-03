@@ -38,7 +38,7 @@ export function AccountNav() {
           {t.nav.logout}
         </Button>
       </div>
-      <nav aria-label={t.account.title} className="flex gap-1 overflow-x-auto border-b">
+      <nav aria-label={t.account.title} className="flex gap-1 overflow-x-auto shadow-[inset_0_-1px_0_var(--color-border)]">
         {tabs.map((tab) => {
           const active = tab.href === "/account" ? pathname === "/account" : pathname.startsWith(tab.href);
           return (
@@ -47,7 +47,7 @@ export function AccountNav() {
               href={tab.href}
               aria-current={active ? "page" : undefined}
               className={cn(
-                "-mb-px whitespace-nowrap border-b-2 px-3 py-2 text-sm font-medium transition-colors",
+                "whitespace-nowrap border-b-2 px-3 py-2 text-sm font-medium transition-colors",
                 active ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground",
               )}
             >

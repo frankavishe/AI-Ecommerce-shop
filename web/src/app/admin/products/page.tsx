@@ -6,10 +6,11 @@ import Link from "next/link";
 import { useState } from "react";
 import { inputClass } from "@/components/shop/form-field";
 import { Pagination } from "@/components/shop/pagination";
-import { EmptyRow, ErrorState, PageHeader, tableWrap, td, th, useUrlParams } from "@/components/admin/ui";
+import { EmptyRow, ErrorState, PageHeader, plural, tableWrap, td, th, useUrlParams } from "@/components/admin/ui";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 import { mediaPath } from "@/lib/media";
 import { formatTZS } from "@/lib/money";
 import { toQuery, useAdminCategories, useAdminProducts } from "@/lib/queries/admin";
@@ -23,13 +24,13 @@ export default function AdminProductsPage() {
   const categories = useAdminCategories();
   const [search, setSearch] = useState(values.search);
 
-  const select = `${inputClass} w-auto min-w-36`;
+  const select = cn(inputClass, "w-auto min-w-36");
 
   return (
     <>
       <PageHeader
         title="Products"
-        description={products.data ? `${products.data.count} products` : undefined}
+        description={products.data ? plural(products.data.count, "product") : undefined}
         actions={
           <Button asChild>
             <Link href="/admin/products/new">
@@ -56,7 +57,7 @@ export default function AdminProductsPage() {
             placeholder="Search name, SKU, tags…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className={`${inputClass} pl-9`}
+            className={cn(inputClass, "pl-9")}
           />
         </form>
         <select aria-label="Category" className={select} value={values.category} onChange={(e) => set({ category: e.target.value })}>

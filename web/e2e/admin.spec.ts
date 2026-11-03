@@ -60,7 +60,7 @@ test.describe("US3 admin", () => {
     await page.getByLabel("Price (TSh)").fill("12000");
     await page.getByLabel("Compare-at price").fill("9000");
     await page.getByLabel("Stock", { exact: true }).fill("5");
-    await page.getByLabel("Images", { exact: true }).setInputFiles([
+    await page.getByLabel("Upload images").setInputFiles([
       { name: "a.png", mimeType: "image/png", buffer: PNG },
       { name: "b.png", mimeType: "image/png", buffer: PNG },
     ]);

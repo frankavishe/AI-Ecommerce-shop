@@ -3,11 +3,12 @@
 import { Search, X } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
-import { EmptyRow, ErrorState, PageHeader, StatusBadge, statusLabel, tableWrap, td, th, useUrlParams } from "@/components/admin/ui";
+import { EmptyRow, ErrorState, PageHeader, plural, StatusBadge, statusLabel, tableWrap, td, th, useUrlParams } from "@/components/admin/ui";
 import { inputClass } from "@/components/shop/form-field";
 import { Pagination } from "@/components/shop/pagination";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 import { formatDateTime } from "@/lib/dates";
 import { formatTZS } from "@/lib/money";
 import { ORDER_STATUSES } from "@/lib/order-status";
@@ -20,11 +21,11 @@ export default function AdminOrdersPage() {
   const orders = useAdminOrders(toQuery({ ...values, page: page > 1 ? String(page) : undefined }));
   const [search, setSearch] = useState(values.search);
   const filtered = KEYS.some((k) => values[k]);
-  const field = `${inputClass} w-auto`;
+  const field = cn(inputClass, "w-auto");
 
   return (
     <>
-      <PageHeader title="Orders" description={orders.data ? `${orders.data.count} orders` : undefined} />
+      <PageHeader title="Orders" description={orders.data ? plural(orders.data.count, "order") : undefined} />
 
       <div className="flex flex-wrap items-end gap-2">
         <form
@@ -42,7 +43,7 @@ export default function AdminOrdersPage() {
             placeholder="Order number, name or phone"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className={`${inputClass} pl-9`}
+            className={cn(inputClass, "pl-9")}
           />
         </form>
         <select aria-label="Status" className={field} value={values.status} onChange={(e) => set({ status: e.target.value })}>

@@ -29,7 +29,7 @@ export function PageHeader({ title, description, actions }: { title: string; des
         <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
         {description && <p className="text-sm text-muted-foreground">{description}</p>}
       </div>
-      {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
+      {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
     </div>
   );
 }
@@ -87,6 +87,8 @@ export function useUrlParams<K extends string>(keys: readonly K[]) {
   return { values, page, set, raw: params };
 }
 
-export const tableWrap = "overflow-x-auto rounded-xl border bg-card";
+export const tableWrap = "relative overflow-x-auto rounded-xl border bg-card";
 export const th = "px-3 py-2 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground";
 export const td = "px-3 py-2 align-middle";
+
+export const plural = (n: number, noun: string) => `${n} ${noun}${n === 1 ? "" : "s"}`;

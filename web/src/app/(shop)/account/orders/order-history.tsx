@@ -51,14 +51,14 @@ export function OrderHistory({ page }: { page: number }) {
       <ul className="flex flex-col divide-y rounded-xl border">
         {results.map((o) => (
           <li key={o.number} className="relative flex flex-wrap items-center gap-x-4 gap-y-2 p-4 hover:bg-accent/50">
-            <div className="min-w-0 flex-1">
+            <div className="min-w-0 flex-1 basis-40">
               <Link href={`/orders/${o.number}`} className="font-medium after:absolute after:inset-0">
                 {o.number}
               </Link>
               <p className="text-sm text-muted-foreground">{formatDateTime(o.placed_at, locale)}</p>
             </div>
             <OrderStatusBadge status={o.status ?? "awaiting_payment"} />
-            <span className="w-28 text-right font-medium tabular-nums">{formatTZS(o.total)}</span>
+            <span className="ml-auto w-28 text-right font-medium tabular-nums">{formatTZS(o.total)}</span>
             <ChevronRight className="hidden size-4 text-muted-foreground sm:block" aria-hidden />
           </li>
         ))}
