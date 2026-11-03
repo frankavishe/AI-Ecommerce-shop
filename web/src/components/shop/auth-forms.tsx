@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { useT } from "@/i18n/client";
 import { LOCALES, type Dictionary } from "@/i18n/config";
 import { ApiError } from "@/lib/api/errors";
+import { applyServerErrors } from "@/lib/forms";
 import type { User } from "@/lib/api/types";
 import { stripPhone, toE164, TZ_PHONE } from "@/lib/phone";
 import { useLogin, useRegister } from "@/lib/queries/session";
@@ -145,18 +146,7 @@ export function RegisterForm({ next }: { next: string | null }) {
       router.replace(landing(next, res?.user));
       router.refresh();
     } catch (e) {
-      if (e instanceof ApiError) {
-        let mapped = false;
-        for (const [field, messages] of Object.entries(e.fields ?? {})) {
-          if (field in getValues()) {
-            setError(field as keyof RegisterValues, { message: messages[0] });
-            mapped = true;
-          }
-        }
-        if (!mapped) setFormError(e.detail ?? t.common.errorBody);
-      } else {
-        setFormError(t.common.errorBody);
-      }
+      setFormError(applyServerErrors(e, { getValues, setError }, t.common.errorBody));
     }
   });
 

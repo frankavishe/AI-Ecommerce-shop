@@ -30,3 +30,8 @@ export type PlacedOrder = Order & {
 };
 
 export type Paginated<T> = { count: number; next?: string | null; previous?: string | null; results: T[] };
+
+/** Admins get the full ProductSerializer from the same endpoint (catalog/views.py get_serializer_class). */
+export type AdminProduct = Product & { stock: number; low_stock_threshold: number; is_active: boolean };
+export type AdminOrderEvent = S["AdminOrderEvent"];
+export type AdminPayment = S["AdminPayment"];

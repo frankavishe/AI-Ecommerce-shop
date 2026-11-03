@@ -16,6 +16,7 @@ import { useT } from "@/i18n/client";
 import type { Dictionary } from "@/i18n/config";
 import { bff } from "@/lib/api/client";
 import { ApiError } from "@/lib/api/errors";
+import { applyServerErrors } from "@/lib/forms";
 import type { Address, DeliveryRegions, Paginated } from "@/lib/api/types";
 import { formatTZS } from "@/lib/money";
 
@@ -71,18 +72,7 @@ function AddressDialog({
       toast.success(t.account.addressSaved);
       onOpenChange(false);
     } catch (e) {
-      if (e instanceof ApiError) {
-        let mapped = false;
-        for (const [field, messages] of Object.entries(e.fields ?? {})) {
-          if (field in getValues()) {
-            setError(field as keyof Values, { message: messages[0] });
-            mapped = true;
-          }
-        }
-        if (!mapped) setFormError(e.detail ?? t.common.errorBody);
-      } else {
-        setFormError(t.common.errorBody);
-      }
+      setFormError(applyServerErrors(e, { getValues, setError }, t.common.errorBody));
     }
   });
 

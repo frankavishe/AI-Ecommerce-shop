@@ -58,9 +58,3 @@ export function isExpired(token: string | undefined, nowMs = Date.now(), skewSec
   if (typeof exp !== "number") return true;
   return exp - skewSeconds <= nowMs / 1000;
 }
-
-/** Only same-origin relative paths are allowed as post-login targets. */
-export function safeNext(next: string | null | undefined, fallback = "/account"): string {
-  if (!next || !next.startsWith("/") || next.startsWith("//") || next.startsWith("/\\")) return fallback;
-  return next;
-}

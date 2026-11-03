@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { canPay, shouldPoll, statusTone, ORDER_STATUSES } from "./order-status";
+import { canPay, NEXT_STATUSES, ORDER_STATUSES, shouldPoll, statusTone } from "./order-status";
 import { en } from "@/i18n/en";
 
 describe("order status", () => {
@@ -17,5 +17,20 @@ describe("order status", () => {
       expect(canPay(s)).toBe(s === "awaiting_payment");
       expect(shouldPoll(s)).toBe(s === "awaiting_payment");
     }
+  });
+});
+
+describe("NEXT_STATUSES", () => {
+  it("covers every status and only points at known statuses", () => {
+    for (const s of ORDER_STATUSES) {
+      expect(NEXT_STATUSES[s]).toBeDefined();
+      for (const n of NEXT_STATUSES[s]) expect(ORDER_STATUSES).toContain(n);
+      expect(NEXT_STATUSES[s]).not.toContain(s);
+    }
+  });
+
+  it("treats delivered and cancelled as final", () => {
+    expect(NEXT_STATUSES.delivered).toEqual([]);
+    expect(NEXT_STATUSES.cancelled).toEqual([]);
   });
 });

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatTZS } from "./money";
+import { addMoney, compareMoney, formatTZS, isMoney } from "./money";
 
 describe("formatTZS", () => {
   it("drops .00 and groups thousands", () => {
@@ -25,7 +25,6 @@ describe("formatTZS", () => {
   });
 });
 
-import { addMoney } from "./money";
 
 describe("addMoney (display-only checkout estimate)", () => {
   it("adds decimal strings exactly", () => {
@@ -37,5 +36,22 @@ describe("addMoney (display-only checkout estimate)", () => {
   it("returns null for malformed input", () => {
     expect(addMoney("abc", "1.00")).toBeNull();
     expect(addMoney(undefined, "1.00")).toBeNull();
+  });
+});
+
+describe("compareMoney / isMoney", () => {
+  it("compares exactly", () => {
+    expect(compareMoney("15000", "12000.00")).toBe(1);
+    expect(compareMoney("0.10", "0.1")).toBe(0);
+    expect(compareMoney("9999.99", "10000")).toBe(-1);
+    expect(compareMoney("abc", "1")).toBeNull();
+  });
+
+  it("validates amounts", () => {
+    expect(isMoney("12000")).toBe(true);
+    expect(isMoney("12000.5")).toBe(true);
+    expect(isMoney("12000.555")).toBe(false);
+    expect(isMoney("-5")).toBe(false);
+    expect(isMoney("")).toBe(false);
   });
 });

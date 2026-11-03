@@ -28,3 +28,18 @@ export const TONE_CLASS: Record<Tone, string> = {
   danger: "bg-red-100 text-red-900 border-red-200",
   muted: "bg-muted text-muted-foreground border-border",
 };
+
+/**
+ * Mirrors backend apps/orders/services.py TRANSITIONS. Only used to suggest choices in the admin
+ * status dialog; Django decides and answers `invalid_transition` for anything else.
+ */
+export const NEXT_STATUSES: Record<OrderStatus, readonly OrderStatus[]> = {
+  awaiting_payment: ["paid", "cancelled", "expired", "needs_review"],
+  paid: ["processing", "cancelled", "needs_review"],
+  processing: ["out_for_delivery", "cancelled"],
+  out_for_delivery: ["delivered", "cancelled"],
+  needs_review: ["paid", "cancelled"],
+  expired: ["needs_review"],
+  delivered: [],
+  cancelled: [],
+};

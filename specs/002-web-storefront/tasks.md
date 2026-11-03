@@ -99,21 +99,21 @@
 
 **Independent Test**: `npx playwright test e2e/admin.spec.ts`
 
-- [ ] T039 [P] [US3] `web/e2e/admin.spec.ts`:
+- [X] T039 [P] [US3] `web/e2e/admin.spec.ts`:
   - a customer opening `/admin`, `/admin/products` or `/admin/orders` is sent to `/forbidden`; anonymous users are sent to `/login`;
   - an admin creates a product with 2 images → it is visible at `/products/<slug>`; deactivating it makes the storefront page 404;
   - a paid order moved to `processing` with a note → the note shows in history; an invalid transition shows the error and the status is unchanged;
   - a delivery region created → it appears in the checkout region select
-- [ ] T040 [US3] Admin layout `web/src/app/admin/layout.tsx` (sidebar: Dashboard, Products, Categories, Orders, Delivery regions; user menu; English only) and admin queries `web/src/lib/queries/admin.ts`
-- [ ] T041 [US3] Dashboard `web/src/app/admin/page.tsx`: counts via `admin/orders/?status=awaiting_payment|paid|processing` (`count` from pagination) and the `products/low_stock/` list
-- [ ] T042 [US3] Products `web/src/app/admin/products/page.tsx` (table, search, category/active/in-stock filters, pagination) and `web/src/components/admin/product-form.tsx` used by `products/new/page.tsx` and `products/[slug]/page.tsx`.
+- [X] T040 [US3] Admin layout `web/src/app/admin/layout.tsx` (sidebar: Dashboard, Products, Categories, Orders, Delivery regions; user menu; English only) and admin queries `web/src/lib/queries/admin.ts`
+- [X] T041 [US3] Dashboard `web/src/app/admin/page.tsx`: counts via `admin/orders/?status=awaiting_payment|paid|processing` (`count` from pagination) and the `products/low_stock/` list
+- [X] T042 [US3] Products `web/src/app/admin/products/page.tsx` (table, search, category/active/in-stock filters, pagination) and `web/src/components/admin/product-form.tsx` used by `products/new/page.tsx` and `products/[slug]/page.tsx`.
   - Fields and checks: name, sku, category, description, description_sw, `price > 0`, `compare_at_price` empty or greater than price, `stock` ≥ 0 integer, low_stock_threshold, tags, is_active.
   - Create sends multipart with `uploaded_images`.
   - The image manager (`products/<slug>/images/`) supports add, alt text, position and delete.
-- [ ] T043 [US3] Categories `web/src/app/admin/categories/page.tsx` (table + dialog CRUD: name, name_sw, parent, is_active)
-- [ ] T044 [US3] Orders `web/src/app/admin/orders/page.tsx` (filters `status`, `paid`, `placed_after`, `placed_before`, `search`, all in URL params; pagination) and `orders/[number]/page.tsx` (items, totals, contact/delivery, events, payments table, status-change dialog posting `{status, note}` to `admin/orders/<n>/status/` and showing `invalid_transition`)
-- [ ] T045 [US3] Delivery regions `web/src/app/admin/delivery-regions/page.tsx` (table + dialog CRUD: name, fee, is_active)
-- [ ] T046 [US3] Run typecheck, unit tests and `e2e/admin.spec.ts`
+- [X] T043 [US3] Categories `web/src/app/admin/categories/page.tsx` (table + dialog CRUD: name, name_sw, parent, is_active)
+- [X] T044 [US3] Orders `web/src/app/admin/orders/page.tsx` (filters `status`, `paid`, `placed_after`, `placed_before`, `search`, all in URL params; pagination) and `orders/[number]/page.tsx` (items, totals, contact/delivery, events, payments table, status-change dialog posting `{status, note}` to `admin/orders/<n>/status/` and showing `invalid_transition`)
+- [X] T045 [US3] Delivery regions `web/src/app/admin/delivery-regions/page.tsx` (table + dialog CRUD: name, fee, is_active)
+- [X] T046 [US3] Run typecheck, unit tests and `e2e/admin.spec.ts`
 
 **Checkpoint**: commit `feat(web): admin dashboard, products, categories, orders and regions (US3)`.
 

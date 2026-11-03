@@ -37,3 +37,14 @@ export function addMoney(...values: (string | null | undefined)[]): string | nul
   const abs = total < ZERO ? -total : total;
   return `${sign}${abs / HUNDRED}.${String(abs % HUNDRED).padStart(2, "0")}`;
 }
+
+/** True when the string is a positive-or-zero TZS amount with at most 2 decimals. */
+export const isMoney = (value: string) => /^\d+(\.\d{1,2})?$/.test(value.trim());
+
+/** Exact comparison of decimal strings: -1, 0 or 1, or null when either is not a valid amount. */
+export function compareMoney(a: string | null | undefined, b: string | null | undefined): -1 | 0 | 1 | null {
+  const x = toCents(a);
+  const y = toCents(b);
+  if (x === null || y === null) return null;
+  return x === y ? 0 : x < y ? -1 : 1;
+}
