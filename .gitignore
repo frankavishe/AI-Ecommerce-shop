@@ -9,3 +9,7 @@ node_modules/
 .next/
 .pytest_cache/
 *.sqlite3
+stakaba.md
+backend/celerybeat-schedule*
+web/test-results/
+web/playwright-report/

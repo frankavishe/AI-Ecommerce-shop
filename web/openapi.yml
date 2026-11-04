@@ -1,0 +1,3345 @@
+openapi: 3.0.3
+info:
+  title: AI Ecommerce Shop API
+  version: 0.1.0
+paths:
+  /api/admin/delivery-regions/:
+    get:
+      operationId: api_admin_delivery_regions_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAdminDeliveryRegionList'
+          description: ''
+    post:
+      operationId: api_admin_delivery_regions_create
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminDeliveryRegionRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AdminDeliveryRegionRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AdminDeliveryRegionRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminDeliveryRegion'
+          description: ''
+  /api/admin/delivery-regions/{id}/:
+    get:
+      operationId: api_admin_delivery_regions_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this delivery region.
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminDeliveryRegion'
+          description: ''
+    put:
+      operationId: api_admin_delivery_regions_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this delivery region.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminDeliveryRegionRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AdminDeliveryRegionRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AdminDeliveryRegionRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminDeliveryRegion'
+          description: ''
+    patch:
+      operationId: api_admin_delivery_regions_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this delivery region.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedAdminDeliveryRegionRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedAdminDeliveryRegionRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedAdminDeliveryRegionRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminDeliveryRegion'
+          description: ''
+    delete:
+      operationId: api_admin_delivery_regions_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this delivery region.
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/admin/orders/:
+    get:
+      operationId: api_admin_orders_list
+      description: Render service-layer ShopErrors as {"detail", "code", ...extra}.
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - in: query
+        name: paid
+        schema:
+          type: boolean
+      - in: query
+        name: placed_after
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: placed_before
+        schema:
+          type: string
+          format: date
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - awaiting_payment
+          - cancelled
+          - delivered
+          - expired
+          - needs_review
+          - out_for_delivery
+          - paid
+          - processing
+        description: |-
+          * `awaiting_payment` - Awaiting payment
+          * `paid` - Paid
+          * `processing` - Processing
+          * `out_for_delivery` - Out for delivery
+          * `delivered` - Delivered
+          * `cancelled` - Cancelled
+          * `expired` - Expired
+          * `needs_review` - Needs review
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAdminOrderSummaryList'
+          description: ''
+  /api/admin/orders/{number}/:
+    get:
+      operationId: api_admin_orders_retrieve
+      description: Render service-layer ShopErrors as {"detail", "code", ...extra}.
+      parameters:
+      - in: path
+        name: number
+        schema:
+          type: string
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminOrder'
+          description: ''
+  /api/admin/orders/{number}/status/:
+    post:
+      operationId: api_admin_orders_status_create
+      description: Render service-layer ShopErrors as {"detail", "code", ...extra}.
+      parameters:
+      - in: path
+        name: number
+        schema:
+          type: string
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StatusChangeRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/StatusChangeRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/StatusChangeRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminOrder'
+          description: ''
+  /api/auth/addresses/:
+    get:
+      operationId: api_auth_addresses_list
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAddressList'
+          description: ''
+    post:
+      operationId: api_auth_addresses_create
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddressRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AddressRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AddressRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Address'
+          description: ''
+  /api/auth/addresses/{id}/:
+    get:
+      operationId: api_auth_addresses_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Address'
+          description: ''
+    put:
+      operationId: api_auth_addresses_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddressRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AddressRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AddressRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Address'
+          description: ''
+    patch:
+      operationId: api_auth_addresses_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedAddressRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedAddressRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedAddressRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Address'
+          description: ''
+    delete:
+      operationId: api_auth_addresses_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/auth/login/:
+    post:
+      operationId: api_auth_login_create
+      description: |-
+        Takes a set of user credentials and returns an access and refresh JSON web
+        token pair to prove the authentication of those credentials.
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShopTokenObtainPairRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ShopTokenObtainPairRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ShopTokenObtainPairRequest'
+        required: true
+      responses:
+        '200':
+          description: No response body
+  /api/auth/me/:
+    get:
+      operationId: api_auth_me_retrieve
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    put:
+      operationId: api_auth_me_update
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    patch:
+      operationId: api_auth_me_partial_update
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedUserRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedUserRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedUserRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+  /api/auth/refresh/:
+    post:
+      operationId: api_auth_refresh_create
+      description: |-
+        Takes a refresh type JSON web token and returns an access type JSON web
+        token if the refresh token is valid.
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenRefresh'
+          description: ''
+  /api/auth/register/:
+    post:
+      operationId: api_auth_register_create
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Register'
+          description: ''
+  /api/auth/riders/:
+    get:
+      operationId: api_auth_riders_list
+      parameters:
+      - in: query
+        name: is_available
+        schema:
+          type: boolean
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: vehicle
+        schema:
+          type: string
+          enum:
+          - bajaji
+          - bicycle
+          - car
+          - motorbike
+        description: |-
+          * `motorbike` - Motorbike (bodaboda)
+          * `bicycle` - Bicycle
+          * `car` - Car
+          * `bajaji` - Bajaji
+      - in: query
+        name: zone
+        schema:
+          type: string
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedRiderList'
+          description: ''
+    post:
+      operationId: api_auth_riders_create
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RiderRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RiderRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RiderRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Rider'
+          description: ''
+  /api/auth/riders/{id}/:
+    get:
+      operationId: api_auth_riders_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this rider profile.
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Rider'
+          description: ''
+    put:
+      operationId: api_auth_riders_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this rider profile.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RiderRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RiderRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RiderRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Rider'
+          description: ''
+    patch:
+      operationId: api_auth_riders_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this rider profile.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedRiderRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedRiderRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedRiderRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Rider'
+          description: ''
+    delete:
+      operationId: api_auth_riders_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this rider profile.
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/cart/:
+    get:
+      operationId: api_cart_retrieve
+      description: Render service-layer ShopErrors as {"detail", "code", ...extra}.
+      parameters:
+      - in: header
+        name: X-Cart-Token
+        schema:
+          type: string
+        description: Guest cart token returned in the cart body.
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cart'
+          description: ''
+    delete:
+      operationId: api_cart_destroy
+      description: Render service-layer ShopErrors as {"detail", "code", ...extra}.
+      parameters:
+      - in: header
+        name: X-Cart-Token
+        schema:
+          type: string
+        description: Guest cart token returned in the cart body.
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '204':
+          description: No response body
+  /api/cart/items/:
+    post:
+      operationId: api_cart_items_create
+      description: Render service-layer ShopErrors as {"detail", "code", ...extra}.
+      parameters:
+      - in: header
+        name: X-Cart-Token
+        schema:
+          type: string
+        description: Guest cart token returned in the cart body.
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddItemRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AddItemRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AddItemRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cart'
+          description: ''
+  /api/cart/items/{product_id}/:
+    patch:
+      operationId: api_cart_items_partial_update
+      description: Render service-layer ShopErrors as {"detail", "code", ...extra}.
+      parameters:
+      - in: header
+        name: X-Cart-Token
+        schema:
+          type: string
+        description: Guest cart token returned in the cart body.
+      - in: path
+        name: product_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedSetQuantityRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedSetQuantityRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedSetQuantityRequest'
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cart'
+          description: ''
+    delete:
+      operationId: api_cart_items_destroy
+      description: Render service-layer ShopErrors as {"detail", "code", ...extra}.
+      parameters:
+      - in: header
+        name: X-Cart-Token
+        schema:
+          type: string
+        description: Guest cart token returned in the cart body.
+      - in: path
+        name: product_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '204':
+          description: No response body
+  /api/cart/merge/:
+    post:
+      operationId: api_cart_merge_create
+      description: Render service-layer ShopErrors as {"detail", "code", ...extra}.
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MergeCartRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/MergeCartRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MergeCartRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cart'
+          description: ''
+  /api/categories/:
+    get:
+      operationId: api_categories_list
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCategoryList'
+          description: ''
+    post:
+      operationId: api_categories_create
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CategoryRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CategoryRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CategoryRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+          description: ''
+  /api/categories/{slug}/:
+    get:
+      operationId: api_categories_retrieve
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+          description: ''
+    put:
+      operationId: api_categories_update
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CategoryRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CategoryRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CategoryRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+          description: ''
+    patch:
+      operationId: api_categories_partial_update
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedCategoryRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedCategoryRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedCategoryRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+          description: ''
+    delete:
+      operationId: api_categories_destroy
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/checkout/:
+    post:
+      operationId: api_checkout_create
+      description: Render service-layer ShopErrors as {"detail", "code", ...extra}.
+      parameters:
+      - in: header
+        name: X-Cart-Token
+        schema:
+          type: string
+        description: Guest cart token returned in the cart body.
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckoutRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CheckoutRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CheckoutRequest'
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+          description: ''
+  /api/delivery-regions/:
+    get:
+      operationId: api_delivery_regions_retrieve
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeliveryRegions'
+          description: ''
+  /api/orders/:
+    get:
+      operationId: api_orders_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedOrderSummaryList'
+          description: ''
+  /api/orders/{number}/:
+    get:
+      operationId: api_orders_retrieve
+      parameters:
+      - in: path
+        name: number
+        schema:
+          type: string
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+          description: ''
+  /api/orders/{number}/pay/:
+    post:
+      operationId: api_orders_pay_create
+      description: |-
+        Start a fresh payment attempt (new reference) for an order still awaiting payment.
+
+        Card: returns payment_url to redirect to. Mobile money: payment_url is null and the customer
+        approves the prompt on their phone.
+      parameters:
+      - in: path
+        name: number
+        schema:
+          type: string
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PayOrderRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PayOrderRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PayOrderRequest'
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentStarted'
+          description: ''
+  /api/orders/lookup/:
+    post:
+      operationId: api_orders_lookup_create
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderLookupRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/OrderLookupRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/OrderLookupRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+          description: ''
+  /api/payments/stakaba/webhook/{token}/:
+    post:
+      operationId: api_payments_stakaba_webhook_create
+      description: |-
+        transaction.success / transaction.failed events.
+
+        Stakaba doesn't sign webhooks and the status lookup needs a dashboard login, so the secret
+        token in the URL is what authenticates the call (see stakaba.md "Webhook trust"). With
+        STAKABA_CONFIRM_VIA_API on, the body is only a trigger and the API decides.
+      parameters:
+      - in: path
+        name: token
+        schema:
+          type: string
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: {}
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/products/:
+    get:
+      operationId: api_products_list
+      description: Public read access to active products; admins get full CRUD and
+        see inactive items.
+      parameters:
+      - in: query
+        name: category
+        schema:
+          type: string
+      - in: query
+        name: in_stock
+        schema:
+          type: boolean
+      - in: query
+        name: is_active
+        schema:
+          type: boolean
+      - in: query
+        name: max_price
+        schema:
+          type: number
+      - in: query
+        name: min_price
+        schema:
+          type: number
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPublicProductList'
+          description: ''
+    post:
+      operationId: api_products_create
+      description: Public read access to active products; admins get full CRUD and
+        see inactive items.
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PublicProductRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PublicProductRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PublicProductRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicProduct'
+          description: ''
+  /api/products/{product_slug}/images/:
+    get:
+      operationId: api_products_images_list
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - in: path
+        name: product_slug
+        schema:
+          type: string
+        required: true
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedProductImageList'
+          description: ''
+    post:
+      operationId: api_products_images_create
+      parameters:
+      - in: path
+        name: product_slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProductImageRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProductImageRequest'
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductImageRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductImage'
+          description: ''
+  /api/products/{product_slug}/images/{id}/:
+    patch:
+      operationId: api_products_images_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      - in: path
+        name: product_slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedProductImageRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedProductImageRequest'
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedProductImageRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductImage'
+          description: ''
+    delete:
+      operationId: api_products_images_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      - in: path
+        name: product_slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/products/{slug}/:
+    get:
+      operationId: api_products_retrieve
+      description: Public read access to active products; admins get full CRUD and
+        see inactive items.
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicProduct'
+          description: ''
+    put:
+      operationId: api_products_update
+      description: Public read access to active products; admins get full CRUD and
+        see inactive items.
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PublicProductRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PublicProductRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PublicProductRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicProduct'
+          description: ''
+    patch:
+      operationId: api_products_partial_update
+      description: Public read access to active products; admins get full CRUD and
+        see inactive items.
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedPublicProductRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedPublicProductRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedPublicProductRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicProduct'
+          description: ''
+    delete:
+      operationId: api_products_destroy
+      description: Public read access to active products; admins get full CRUD and
+        see inactive items.
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/products/low_stock/:
+    get:
+      operationId: api_products_low_stock_retrieve
+      description: Public read access to active products; admins get full CRUD and
+        see inactive items.
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicProduct'
+          description: ''
+  /api/schema/:
+    get:
+      operationId: api_schema_retrieve
+      description: |-
+        OpenApi3 schema for this API. Format can be selected via content negotiation.
+
+        - YAML: application/vnd.oai.openapi
+        - JSON: application/vnd.oai.openapi+json
+      parameters:
+      - in: query
+        name: format
+        schema:
+          type: string
+          enum:
+          - json
+          - yaml
+      - in: query
+        name: lang
+        schema:
+          type: string
+          enum:
+          - af
+          - ar
+          - ar-dz
+          - ast
+          - az
+          - be
+          - bg
+          - bn
+          - br
+          - bs
+          - ca
+          - ckb
+          - cs
+          - cy
+          - da
+          - de
+          - dsb
+          - el
+          - en
+          - en-au
+          - en-gb
+          - eo
+          - es
+          - es-ar
+          - es-co
+          - es-mx
+          - es-ni
+          - es-ve
+          - et
+          - eu
+          - fa
+          - fi
+          - fr
+          - fy
+          - ga
+          - gd
+          - gl
+          - he
+          - hi
+          - hr
+          - hsb
+          - hu
+          - hy
+          - ia
+          - id
+          - ig
+          - io
+          - is
+          - it
+          - ja
+          - ka
+          - kab
+          - kk
+          - km
+          - kn
+          - ko
+          - ky
+          - lb
+          - lt
+          - lv
+          - mk
+          - ml
+          - mn
+          - mr
+          - ms
+          - my
+          - nb
+          - ne
+          - nl
+          - nn
+          - os
+          - pa
+          - pl
+          - pt
+          - pt-br
+          - ro
+          - ru
+          - sk
+          - sl
+          - sq
+          - sr
+          - sr-latn
+          - sv
+          - sw
+          - ta
+          - te
+          - tg
+          - th
+          - tk
+          - tr
+          - tt
+          - udm
+          - ug
+          - uk
+          - ur
+          - uz
+          - vi
+          - zh-hans
+          - zh-hant
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/vnd.oai.openapi:
+              schema:
+                type: object
+                additionalProperties: {}
+            application/yaml:
+              schema:
+                type: object
+                additionalProperties: {}
+            application/vnd.oai.openapi+json:
+              schema:
+                type: object
+                additionalProperties: {}
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+components:
+  schemas:
+    AddItemRequest:
+      type: object
+      properties:
+        product_id:
+          type: integer
+        quantity:
+          type: integer
+          minimum: 1
+          default: 1
+      required:
+      - product_id
+    Address:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        label:
+          type: string
+          maxLength: 50
+        region:
+          type: string
+          maxLength: 80
+        district:
+          type: string
+          maxLength: 80
+        street:
+          type: string
+          maxLength: 255
+        latitude:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,6})?$
+          nullable: true
+        longitude:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,6})?$
+          nullable: true
+        is_default:
+          type: boolean
+      required:
+      - id
+      - region
+      - street
+    AddressRequest:
+      type: object
+      properties:
+        label:
+          type: string
+          minLength: 1
+          maxLength: 50
+        region:
+          type: string
+          minLength: 1
+          maxLength: 80
+        district:
+          type: string
+          maxLength: 80
+        street:
+          type: string
+          minLength: 1
+          maxLength: 255
+        latitude:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,6})?$
+          nullable: true
+        longitude:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,6})?$
+          nullable: true
+        is_default:
+          type: boolean
+      required:
+      - region
+      - street
+    AdminDeliveryRegion:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 80
+        fee:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        is_active:
+          type: boolean
+      required:
+      - fee
+      - id
+      - name
+    AdminDeliveryRegionRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 80
+        fee:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        is_active:
+          type: boolean
+      required:
+      - fee
+      - name
+    AdminOrder:
+      type: object
+      properties:
+        number:
+          type: string
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/OrderStatusEnum'
+          readOnly: true
+        contact_name:
+          type: string
+          readOnly: true
+        contact_phone:
+          type: string
+          readOnly: true
+        contact_email:
+          type: string
+          format: email
+          readOnly: true
+          description: Needed for card payments
+        region:
+          type: string
+          readOnly: true
+        district:
+          type: string
+          readOnly: true
+        street:
+          type: string
+          readOnly: true
+        notes:
+          type: string
+          readOnly: true
+        subtotal:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+        delivery_fee:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+        total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+        currency:
+          type: string
+          readOnly: true
+        placed_at:
+          type: string
+          format: date-time
+          readOnly: true
+        paid_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        expires_at:
+          type: string
+          format: date-time
+          readOnly: true
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItem'
+          readOnly: true
+        events:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminOrderEvent'
+          readOnly: true
+        payment_url:
+          type: string
+          nullable: true
+          readOnly: true
+        user:
+          type: string
+          readOnly: true
+        reminder_sent_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        payments:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminPayment'
+          readOnly: true
+      required:
+      - contact_email
+      - contact_name
+      - contact_phone
+      - currency
+      - delivery_fee
+      - district
+      - events
+      - expires_at
+      - items
+      - notes
+      - number
+      - paid_at
+      - payment_url
+      - payments
+      - placed_at
+      - region
+      - reminder_sent_at
+      - status
+      - street
+      - subtotal
+      - total
+      - user
+    AdminOrderEvent:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/OrderStatusEnum'
+        source:
+          $ref: '#/components/schemas/SourceEnum'
+        note:
+          type: string
+          maxLength: 255
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        actor:
+          type: string
+          readOnly: true
+      required:
+      - actor
+      - created_at
+      - source
+      - status
+    AdminOrderSummary:
+      type: object
+      properties:
+        number:
+          type: string
+          maxLength: 12
+        status:
+          $ref: '#/components/schemas/OrderStatusEnum'
+        total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        currency:
+          type: string
+          readOnly: true
+        placed_at:
+          type: string
+          format: date-time
+        paid_at:
+          type: string
+          format: date-time
+          nullable: true
+        contact_name:
+          type: string
+          maxLength: 120
+        contact_phone:
+          type: string
+          pattern: ^\+[1-9]\d{7,14}$
+          maxLength: 16
+        region:
+          type: string
+          maxLength: 80
+      required:
+      - contact_name
+      - contact_phone
+      - currency
+      - number
+      - region
+      - total
+    AdminPayment:
+      type: object
+      properties:
+        reference:
+          type: string
+          description: Our reference, sent to Stakaba as metadata.orderId
+          maxLength: 20
+        method:
+          $ref: '#/components/schemas/PaymentMethodEnum'
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        currency:
+          type: string
+          maxLength: 3
+        status:
+          $ref: '#/components/schemas/PaymentStatusEnum'
+        checkout_link:
+          type: string
+          format: uri
+          maxLength: 500
+        provider_ref:
+          type: string
+          description: Stakaba internalReference
+          maxLength: 100
+        channel:
+          type: string
+          description: Mobile money network
+          maxLength: 60
+        receipt:
+          type: string
+          description: Operator receipt (providerReference), quoted in disputes
+          maxLength: 100
+        collected_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - amount
+      - created_at
+      - reference
+      - updated_at
+    Cart:
+      type: object
+      description: Renders services.cart_totals(cart).
+      properties:
+        token:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CartLine'
+        item_count:
+          type: integer
+        subtotal:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+      required:
+      - item_count
+      - items
+      - subtotal
+      - token
+    CartLine:
+      type: object
+      properties:
+        product:
+          $ref: '#/components/schemas/CartProduct'
+        quantity:
+          type: integer
+        unit_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+        line_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+      required:
+      - line_total
+      - product
+      - quantity
+      - unit_price
+    CartProduct:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 200
+        slug:
+          type: string
+          maxLength: 220
+          pattern: ^[-a-zA-Z0-9_]+$
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          description: Price in TZS
+        stock:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        is_active:
+          type: boolean
+      required:
+      - id
+      - name
+      - price
+    Category:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 120
+        name_sw:
+          type: string
+          title: Swahili name
+          maxLength: 120
+        slug:
+          type: string
+          readOnly: true
+          pattern: ^[-a-zA-Z0-9_]+$
+        parent:
+          type: integer
+          nullable: true
+        is_active:
+          type: boolean
+      required:
+      - id
+      - name
+      - slug
+    CategoryRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        name_sw:
+          type: string
+          title: Swahili name
+          maxLength: 120
+        parent:
+          type: integer
+          nullable: true
+        is_active:
+          type: boolean
+      required:
+      - name
+    CheckoutRequest:
+      type: object
+      description: |-
+        Guest contact and address, or a saved address_id for logged-in customers.
+
+        Prices and totals are never accepted from the client.
+      properties:
+        payment_method:
+          allOf:
+          - $ref: '#/components/schemas/PaymentMethodEnum'
+          default: mobile_money
+        network:
+          allOf:
+          - $ref: '#/components/schemas/MobileMoneyNetworkEnum'
+          description: |-
+            Mobile money network; guessed from the phone number when left out.
+
+            * `Mpesa` - Mpesa
+            * `AirtelMoney` - AirtelMoney
+            * `TigoPesa` - TigoPesa
+            * `HaloPesa` - HaloPesa
+        email:
+          type: string
+          format: email
+        address_id:
+          type: integer
+        contact_name:
+          type: string
+          maxLength: 120
+        contact_phone:
+          type: string
+          maxLength: 20
+        region:
+          type: string
+          maxLength: 80
+        district:
+          type: string
+          default: ''
+          maxLength: 80
+        street:
+          type: string
+          maxLength: 255
+        notes:
+          type: string
+          default: ''
+    DeliveryRegion:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 80
+        fee:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+      required:
+      - fee
+      - name
+    DeliveryRegions:
+      type: object
+      properties:
+        regions:
+          type: array
+          items:
+            $ref: '#/components/schemas/DeliveryRegion'
+        default_fee:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+      required:
+      - default_fee
+      - regions
+    MergeCartRequest:
+      type: object
+      properties:
+        cart_token:
+          type: string
+          minLength: 1
+      required:
+      - cart_token
+    MobileMoneyNetworkEnum:
+      enum:
+      - Mpesa
+      - AirtelMoney
+      - TigoPesa
+      - HaloPesa
+      type: string
+      description: |-
+        * `Mpesa` - Mpesa
+        * `AirtelMoney` - AirtelMoney
+        * `TigoPesa` - TigoPesa
+        * `HaloPesa` - HaloPesa
+    Order:
+      type: object
+      properties:
+        number:
+          type: string
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/OrderStatusEnum'
+          readOnly: true
+        contact_name:
+          type: string
+          readOnly: true
+        contact_phone:
+          type: string
+          readOnly: true
+        contact_email:
+          type: string
+          format: email
+          readOnly: true
+          description: Needed for card payments
+        region:
+          type: string
+          readOnly: true
+        district:
+          type: string
+          readOnly: true
+        street:
+          type: string
+          readOnly: true
+        notes:
+          type: string
+          readOnly: true
+        subtotal:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+        delivery_fee:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+        total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+        currency:
+          type: string
+          readOnly: true
+        placed_at:
+          type: string
+          format: date-time
+          readOnly: true
+        paid_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        expires_at:
+          type: string
+          format: date-time
+          readOnly: true
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItem'
+          readOnly: true
+        events:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderEvent'
+          readOnly: true
+        payment_url:
+          type: string
+          nullable: true
+          readOnly: true
+      required:
+      - contact_email
+      - contact_name
+      - contact_phone
+      - currency
+      - delivery_fee
+      - district
+      - events
+      - expires_at
+      - items
+      - notes
+      - number
+      - paid_at
+      - payment_url
+      - placed_at
+      - region
+      - status
+      - street
+      - subtotal
+      - total
+    OrderEvent:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/OrderStatusEnum'
+        source:
+          $ref: '#/components/schemas/SourceEnum'
+        note:
+          type: string
+          maxLength: 255
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - source
+      - status
+    OrderItem:
+      type: object
+      properties:
+        product:
+          type: integer
+          nullable: true
+        product_name:
+          type: string
+          maxLength: 200
+        unit_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        quantity:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        line_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+      required:
+      - line_total
+      - product_name
+      - quantity
+      - unit_price
+    OrderLookupRequest:
+      type: object
+      properties:
+        number:
+          type: string
+          minLength: 1
+          maxLength: 12
+        phone:
+          type: string
+          minLength: 1
+          maxLength: 20
+      required:
+      - number
+      - phone
+    OrderStatusEnum:
+      enum:
+      - awaiting_payment
+      - paid
+      - processing
+      - out_for_delivery
+      - delivered
+      - cancelled
+      - expired
+      - needs_review
+      type: string
+      description: |-
+        * `awaiting_payment` - Awaiting payment
+        * `paid` - Paid
+        * `processing` - Processing
+        * `out_for_delivery` - Out for delivery
+        * `delivered` - Delivered
+        * `cancelled` - Cancelled
+        * `expired` - Expired
+        * `needs_review` - Needs review
+    OrderSummary:
+      type: object
+      properties:
+        number:
+          type: string
+          maxLength: 12
+        status:
+          $ref: '#/components/schemas/OrderStatusEnum'
+        total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        currency:
+          type: string
+          readOnly: true
+        placed_at:
+          type: string
+          format: date-time
+        paid_at:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+      - currency
+      - number
+      - total
+    PaginatedAddressList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Address'
+    PaginatedAdminDeliveryRegionList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminDeliveryRegion'
+    PaginatedAdminOrderSummaryList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminOrderSummary'
+    PaginatedCategoryList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Category'
+    PaginatedOrderSummaryList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderSummary'
+    PaginatedProductImageList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductImage'
+    PaginatedPublicProductList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/PublicProduct'
+    PaginatedRiderList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Rider'
+    PatchedAddressRequest:
+      type: object
+      properties:
+        label:
+          type: string
+          minLength: 1
+          maxLength: 50
+        region:
+          type: string
+          minLength: 1
+          maxLength: 80
+        district:
+          type: string
+          maxLength: 80
+        street:
+          type: string
+          minLength: 1
+          maxLength: 255
+        latitude:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,6})?$
+          nullable: true
+        longitude:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,6})?$
+          nullable: true
+        is_default:
+          type: boolean
+    PatchedAdminDeliveryRegionRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 80
+        fee:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        is_active:
+          type: boolean
+    PatchedCategoryRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        name_sw:
+          type: string
+          title: Swahili name
+          maxLength: 120
+        parent:
+          type: integer
+          nullable: true
+        is_active:
+          type: boolean
+    PatchedProductImageRequest:
+      type: object
+      properties:
+        image:
+          type: string
+          format: binary
+        alt_text:
+          type: string
+          maxLength: 200
+        position:
+          type: integer
+          maximum: 32767
+          minimum: 0
+    PatchedPublicProductRequest:
+      type: object
+      description: 'Storefront view: hides inventory internals.'
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        sku:
+          type: string
+          nullable: true
+          maxLength: 64
+        category:
+          type: integer
+          nullable: true
+        description:
+          type: string
+        description_sw:
+          type: string
+          title: Swahili description
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          description: Price in TZS
+        compare_at_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          nullable: true
+        attributes:
+          description: 'e.g. {"color": "red", "size": "42"}'
+        tags:
+          type: string
+          description: Comma-separated search keywords (EN/SW)
+          maxLength: 255
+    PatchedRiderRequest:
+      type: object
+      description: 'Admin-facing: create and manage riders (user + profile in one
+        payload).'
+      properties:
+        username:
+          type: string
+          minLength: 1
+        first_name:
+          type: string
+          minLength: 1
+        last_name:
+          type: string
+        phone:
+          type: string
+          minLength: 1
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          writeOnly: true
+          minLength: 8
+        vehicle:
+          $ref: '#/components/schemas/VehicleEnum'
+        plate_number:
+          type: string
+          maxLength: 20
+        zone:
+          type: string
+          description: Area the rider covers
+          maxLength: 80
+        is_available:
+          type: boolean
+    PatchedSetQuantityRequest:
+      type: object
+      properties:
+        quantity:
+          type: integer
+          minimum: 0
+    PatchedUserRequest:
+      type: object
+      properties:
+        username:
+          type: string
+          minLength: 1
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+        email:
+          type: string
+          format: email
+          title: Email address
+          maxLength: 254
+        first_name:
+          type: string
+          maxLength: 150
+        last_name:
+          type: string
+          maxLength: 150
+        phone:
+          type: string
+          nullable: true
+          pattern: ^\+[1-9]\d{7,14}$
+          maxLength: 16
+        preferred_language:
+          $ref: '#/components/schemas/PreferredLanguageEnum'
+    PayOrderRequest:
+      type: object
+      description: |-
+        How the customer wants to pay. Mobile money pushes a PIN prompt to the order's phone;
+        card returns a hosted checkout URL and needs an email.
+      properties:
+        payment_method:
+          allOf:
+          - $ref: '#/components/schemas/PaymentMethodEnum'
+          default: mobile_money
+        network:
+          allOf:
+          - $ref: '#/components/schemas/MobileMoneyNetworkEnum'
+          description: |-
+            Mobile money network; guessed from the phone number when left out.
+
+            * `Mpesa` - Mpesa
+            * `AirtelMoney` - AirtelMoney
+            * `TigoPesa` - TigoPesa
+            * `HaloPesa` - HaloPesa
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+          minLength: 1
+          maxLength: 20
+    PaymentMethodEnum:
+      enum:
+      - mobile_money
+      - card
+      type: string
+      description: |-
+        * `mobile_money` - Mobile money
+        * `card` - Card
+    PaymentStarted:
+      type: object
+      properties:
+        payment_method:
+          $ref: '#/components/schemas/PaymentMethodEnum'
+        payment_status:
+          $ref: '#/components/schemas/PaymentStatusEnum'
+        payment_url:
+          type: string
+          format: uri
+          nullable: true
+        message:
+          type: string
+      required:
+      - message
+      - payment_method
+      - payment_status
+      - payment_url
+    PaymentStatusEnum:
+      enum:
+      - pending
+      - success
+      - failed
+      - mismatch
+      type: string
+      description: |-
+        * `pending` - Pending
+        * `success` - Success
+        * `failed` - Failed
+        * `mismatch` - Amount mismatch
+    PreferredLanguageEnum:
+      enum:
+      - sw
+      - en
+      type: string
+      description: |-
+        * `sw` - Swahili
+        * `en` - English
+    ProductImage:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        image:
+          type: string
+          format: uri
+        alt_text:
+          type: string
+          maxLength: 200
+        position:
+          type: integer
+          maximum: 32767
+          minimum: 0
+      required:
+      - id
+      - image
+    ProductImageRequest:
+      type: object
+      properties:
+        image:
+          type: string
+          format: binary
+        alt_text:
+          type: string
+          maxLength: 200
+        position:
+          type: integer
+          maximum: 32767
+          minimum: 0
+      required:
+      - image
+    PublicProduct:
+      type: object
+      description: 'Storefront view: hides inventory internals.'
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 200
+        slug:
+          type: string
+          readOnly: true
+          pattern: ^[-a-zA-Z0-9_]+$
+        sku:
+          type: string
+          nullable: true
+          maxLength: 64
+        category:
+          type: integer
+          nullable: true
+        category_name:
+          type: string
+          readOnly: true
+        description:
+          type: string
+        description_sw:
+          type: string
+          title: Swahili description
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          description: Price in TZS
+        compare_at_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          nullable: true
+        in_stock:
+          type: boolean
+          readOnly: true
+        attributes:
+          description: 'e.g. {"color": "red", "size": "42"}'
+        tags:
+          type: string
+          description: Comma-separated search keywords (EN/SW)
+          maxLength: 255
+        images:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductImage'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - category_name
+      - created_at
+      - id
+      - images
+      - in_stock
+      - name
+      - price
+      - slug
+      - updated_at
+    PublicProductRequest:
+      type: object
+      description: 'Storefront view: hides inventory internals.'
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        sku:
+          type: string
+          nullable: true
+          maxLength: 64
+        category:
+          type: integer
+          nullable: true
+        description:
+          type: string
+        description_sw:
+          type: string
+          title: Swahili description
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          description: Price in TZS
+        compare_at_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          nullable: true
+        attributes:
+          description: 'e.g. {"color": "red", "size": "42"}'
+        tags:
+          type: string
+          description: Comma-separated search keywords (EN/SW)
+          maxLength: 255
+      required:
+      - name
+      - price
+    Register:
+      type: object
+      properties:
+        username:
+          type: string
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+        email:
+          type: string
+          format: email
+          title: Email address
+          maxLength: 254
+        first_name:
+          type: string
+          maxLength: 150
+        last_name:
+          type: string
+          maxLength: 150
+        phone:
+          type: string
+          nullable: true
+          pattern: ^\+[1-9]\d{7,14}$
+          maxLength: 16
+        preferred_language:
+          $ref: '#/components/schemas/PreferredLanguageEnum'
+      required:
+      - username
+    RegisterRequest:
+      type: object
+      properties:
+        username:
+          type: string
+          minLength: 1
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+        email:
+          type: string
+          format: email
+          title: Email address
+          maxLength: 254
+        first_name:
+          type: string
+          maxLength: 150
+        last_name:
+          type: string
+          maxLength: 150
+        phone:
+          type: string
+          nullable: true
+          pattern: ^\+[1-9]\d{7,14}$
+          maxLength: 16
+        password:
+          type: string
+          writeOnly: true
+          minLength: 8
+        preferred_language:
+          $ref: '#/components/schemas/PreferredLanguageEnum'
+      required:
+      - password
+      - username
+    Rider:
+      type: object
+      description: 'Admin-facing: create and manage riders (user + profile in one
+        payload).'
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        user_id:
+          type: integer
+          readOnly: true
+        username:
+          type: string
+        first_name:
+          type: string
+        last_name:
+          type: string
+        phone:
+          type: string
+        email:
+          type: string
+          format: email
+        vehicle:
+          $ref: '#/components/schemas/VehicleEnum'
+        plate_number:
+          type: string
+          maxLength: 20
+        zone:
+          type: string
+          description: Area the rider covers
+          maxLength: 80
+        is_available:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - first_name
+      - id
+      - phone
+      - user_id
+      - username
+    RiderRequest:
+      type: object
+      description: 'Admin-facing: create and manage riders (user + profile in one
+        payload).'
+      properties:
+        username:
+          type: string
+          minLength: 1
+        first_name:
+          type: string
+          minLength: 1
+        last_name:
+          type: string
+        phone:
+          type: string
+          minLength: 1
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          writeOnly: true
+          minLength: 8
+        vehicle:
+          $ref: '#/components/schemas/VehicleEnum'
+        plate_number:
+          type: string
+          maxLength: 20
+        zone:
+          type: string
+          description: Area the rider covers
+          maxLength: 80
+        is_available:
+          type: boolean
+      required:
+      - first_name
+      - phone
+      - username
+    RoleEnum:
+      enum:
+      - customer
+      - admin
+      - rider
+      type: string
+      description: |-
+        * `customer` - Customer
+        * `admin` - Admin
+        * `rider` - Rider
+    ShopTokenObtainPairRequest:
+      type: object
+      properties:
+        username:
+          type: string
+          writeOnly: true
+          minLength: 1
+        password:
+          type: string
+          writeOnly: true
+          minLength: 1
+      required:
+      - password
+      - username
+    SourceEnum:
+      enum:
+      - customer
+      - admin
+      - system
+      - provider
+      type: string
+      description: |-
+        * `customer` - Customer
+        * `admin` - Admin
+        * `system` - System
+        * `provider` - Payment provider
+    StatusChangeRequest:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/OrderStatusEnum'
+        note:
+          type: string
+          default: ''
+          maxLength: 255
+      required:
+      - status
+    TokenRefresh:
+      type: object
+      properties:
+        access:
+          type: string
+          readOnly: true
+        refresh:
+          type: string
+      required:
+      - access
+      - refresh
+    TokenRefreshRequest:
+      type: object
+      properties:
+        refresh:
+          type: string
+          minLength: 1
+      required:
+      - refresh
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        username:
+          type: string
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+        email:
+          type: string
+          format: email
+          title: Email address
+          maxLength: 254
+        first_name:
+          type: string
+          maxLength: 150
+        last_name:
+          type: string
+          maxLength: 150
+        phone:
+          type: string
+          nullable: true
+          pattern: ^\+[1-9]\d{7,14}$
+          maxLength: 16
+        role:
+          allOf:
+          - $ref: '#/components/schemas/RoleEnum'
+          readOnly: true
+        whatsapp_verified:
+          type: boolean
+          readOnly: true
+        preferred_language:
+          $ref: '#/components/schemas/PreferredLanguageEnum'
+      required:
+      - id
+      - role
+      - username
+      - whatsapp_verified
+    UserRequest:
+      type: object
+      properties:
+        username:
+          type: string
+          minLength: 1
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+        email:
+          type: string
+          format: email
+          title: Email address
+          maxLength: 254
+        first_name:
+          type: string
+          maxLength: 150
+        last_name:
+          type: string
+          maxLength: 150
+        phone:
+          type: string
+          nullable: true
+          pattern: ^\+[1-9]\d{7,14}$
+          maxLength: 16
+        preferred_language:
+          $ref: '#/components/schemas/PreferredLanguageEnum'
+      required:
+      - username
+    VehicleEnum:
+      enum:
+      - motorbike
+      - bicycle
+      - car
+      - bajaji
+      type: string
+      description: |-
+        * `motorbike` - Motorbike (bodaboda)
+        * `bicycle` - Bicycle
+        * `car` - Car
+        * `bajaji` - Bajaji
+  securitySchemes:
+    jwtAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
