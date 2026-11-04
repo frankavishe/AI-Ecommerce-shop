@@ -32,11 +32,17 @@ export function catalogQuery(sp: Record<string, string | string[] | undefined>):
   return q;
 }
 
+/** Throws so a failed request reaches the error page; returning a fallback here would be cached as real data. */
+function assertOk(response: Response) {
+  if (!response.ok) throw new Error(`Catalog API ${response.url} returned ${response.status}`);
+}
+
 export async function getCategories(): Promise<Category[]> {
   "use cache";
   cacheLife("minutes");
   cacheTag("catalog");
-  const { data } = await server.GET("/api/categories/");
+  const { data, response } = await server.GET("/api/categories/");
+  assertOk(response);
   const page = data as unknown as Paginated<Category> | Category[] | undefined;
   const list = Array.isArray(page) ? page : (page?.results ?? []);
   return list.filter((c) => c.is_active !== false);
@@ -46,7 +52,8 @@ export async function getProducts(query: CatalogQuery): Promise<Paginated<Produc
   "use cache";
   cacheLife("minutes");
   cacheTag("catalog");
-  const { data } = await server.GET("/api/products/", { params: { query: query as never } });
+  const { data, response } = await server.GET("/api/products/", { params: { query: query as never } });
+  assertOk(response);
   return (data as Paginated<Product> | undefined) ?? { count: 0, results: [] };
 }
 
@@ -55,12 +62,15 @@ export async function getProduct(slug: string): Promise<Product | null> {
   cacheLife("minutes");
   cacheTag("catalog", `product:${slug}`);
   const { data, response } = await server.GET("/api/products/{slug}/", { params: { path: { slug } } });
-  return response.ok && data ? (data as Product) : null;
+  if (response.status === 404) return null;
+  assertOk(response);
+  return data ? (data as Product) : null;
 }
 
 export async function getDeliveryRegions(): Promise<DeliveryRegions> {
   "use cache";
   cacheLife("minutes");
-  const { data } = await server.GET("/api/delivery-regions/");
+  const { data, response } = await server.GET("/api/delivery-regions/");
+  assertOk(response);
   return (data as DeliveryRegions | undefined) ?? { regions: [], default_fee: "0.00" };
 }

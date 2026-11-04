@@ -24,8 +24,8 @@ Refresh the schema snapshot after backend API changes:
 npm run lint
 npm run typecheck      # tsc --noEmit (also catches missing Swahili keys)
 npm test               # vitest
-npm run build
-npx playwright test    # needs the backend + seed data running
+npm run build          # needs a reachable backend: `/` is prerendered with live catalog data
+npx playwright test    # starts its own isolated stack; needs the test DB on :5434
 ```
 
 ## Manual validation scenarios
