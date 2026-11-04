@@ -97,6 +97,23 @@ test.describe("US1 guest buys a product", () => {
     await page.waitForURL(/e2e-fake-card\?ref=FAKECARD/);
   });
 
+  test("at 360 px the cart name clears the quantity box and the page does not scroll sideways", async ({ page }) => {
+    await page.setViewportSize({ width: 360, height: 740 });
+    await page.goto("/products/e2e-red-sneakers");
+    await page.getByRole("button", { name: "Add to cart" }).click();
+    await expect(page.getByTestId("cart-count")).toHaveText("1");
+    await page.goto("/cart");
+
+    const line = page.getByTestId("cart-line").first();
+    await expect(line).toBeVisible();
+    const name = (await line.getByRole("link").first().boundingBox())!;
+    const quantity = (await line.locator("input").boundingBox())!;
+    expect(name.y + name.height).toBeLessThanOrEqual(quantity.y);
+
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    expect(overflow).toBe(0);
+  });
+
   test("switching to Swahili changes the interface", async ({ page }) => {
     await page.goto("/products/e2e-red-sneakers");
     await page.getByRole("button", { name: /Language/ }).click();

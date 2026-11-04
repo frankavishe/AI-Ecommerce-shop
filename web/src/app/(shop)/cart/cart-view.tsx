@@ -79,14 +79,14 @@ export function CartView() {
         <ul className="divide-y rounded-xl border">
           {cart.items.map((line) => (
             <li key={line.product.id} data-testid="cart-line" className="flex flex-wrap items-center gap-3 p-4">
-              <div className="min-w-0 flex-1">
+              <div className="min-w-0 flex-1 basis-full sm:basis-0">
                 <Link href={`/products/${line.product.slug}`} className="font-medium hover:underline">
                   {line.product.name}
                 </Link>
                 <p className="text-sm text-muted-foreground tabular-nums">{formatTZS(line.unit_price)}</p>
               </div>
               <QuantityInput key={line.quantity} line={line} />
-              <p className="w-28 text-right font-semibold tabular-nums">{formatTZS(line.line_total)}</p>
+              <p className="ml-auto w-28 text-right font-semibold tabular-nums sm:ml-0">{formatTZS(line.line_total)}</p>
               <Button
                 variant="ghost"
                 size="icon"

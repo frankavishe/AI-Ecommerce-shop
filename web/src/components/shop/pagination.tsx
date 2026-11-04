@@ -35,10 +35,10 @@ export function Pagination({
             {labels.previous}
           </Link>
         ) : (
-          <span>
+          <>
             <ChevronLeft className="size-4" />
             {labels.previous}
-          </span>
+          </>
         )}
       </Button>
       <span className="text-sm text-muted-foreground">
@@ -51,10 +51,10 @@ export function Pagination({
             <ChevronRight className="size-4" />
           </Link>
         ) : (
-          <span>
+          <>
             {labels.next}
             <ChevronRight className="size-4" />
-          </span>
+          </>
         )}
       </Button>
     </nav>

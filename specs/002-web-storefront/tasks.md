@@ -119,9 +119,9 @@
 
 ## Phase 6: Polish
 
-- [ ] T047 Run `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`, the full `npx playwright test`, and `npm run gen:api` (no diff); fix any issues
-- [ ] T048 [P] Walk through quickstart.md manually (including 360 px layouts in Chrome) and fix layout issues
-- [ ] T049 [P] Mark tasks done in `specs/002-web-storefront/tasks.md` and update project memory
+- [X] T047 Run `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`, the full `npx playwright test`, and `npm run gen:api` (no diff); fix any issues
+- [X] T048 [P] Walk through quickstart.md manually (including 360 px layouts in Chrome) and fix layout issues
+- [X] T049 [P] Mark tasks done in `specs/002-web-storefront/tasks.md` and update project memory
 
 ## Dependencies
 
