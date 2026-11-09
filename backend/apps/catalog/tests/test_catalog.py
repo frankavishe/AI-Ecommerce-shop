@@ -36,6 +36,8 @@ def test_admin_creates_product_with_images(admin_client):
     product = Product.objects.get()
     assert product.slug == "red-sneakers"
     assert product.images.count() == 2
+    assert res.data["category_name"] == "Shoes"
+    assert res.data["category_name_sw"] == "Viatu"
 
 
 @pytest.mark.django_db

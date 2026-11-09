@@ -1,4 +1,5 @@
 from datetime import timedelta
+from decimal import Decimal
 from pathlib import Path
 
 import environ
@@ -27,6 +28,8 @@ INSTALLED_APPS = [
     "drf_spectacular",
     "apps.accounts",
     "apps.catalog",
+    "apps.orders",
+    "apps.payments",
 ]
 
 MIDDLEWARE = [
@@ -61,6 +64,8 @@ TEMPLATES = [
 DATABASES = {
     "default": env.db("DATABASE_URL", default="postgres://shop:shop@localhost:5432/shop"),
 }
+CACHES = {"default": env.cache("CACHE_URL", default="locmemcache://")}
+
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 AUTH_USER_MODEL = "accounts.User"
 
@@ -122,11 +127,39 @@ SPECTACULAR_SETTINGS = {
     "TITLE": "AI Ecommerce Shop API",
     "VERSION": "0.1.0",
     "COMPONENT_SPLIT_REQUEST": True,
+    "ENUM_NAME_OVERRIDES": {
+        "OrderStatusEnum": "apps.orders.models.Order.Status",
+        "PaymentStatusEnum": "apps.payments.models.Payment.Status",
+        "PaymentMethodEnum": "apps.payments.models.Payment.Method",
+        "MobileMoneyNetworkEnum": "apps.payments.stakaba.NETWORKS",
+    },
 }
 
 CELERY_BROKER_URL = env("REDIS_URL", default="redis://localhost:6379/0")
 CELERY_RESULT_BACKEND = CELERY_BROKER_URL
 CELERY_TASK_ALWAYS_EAGER = env.bool("CELERY_TASK_ALWAYS_EAGER", default=False)
 CELERY_TIMEZONE = TIME_ZONE
+CELERY_BEAT_SCHEDULE = {
+    "send-payment-reminders": {
+        "task": "apps.orders.tasks.send_payment_reminders",
+        "schedule": timedelta(minutes=5),
+    },
+    "expire-unpaid-orders": {
+        "task": "apps.orders.tasks.expire_unpaid_orders",
+        "schedule": timedelta(minutes=5),
+    },
+}
 
 SHOP_CURRENCY = "TZS"
+SHOP_DEFAULT_DELIVERY_FEE = Decimal(env("SHOP_DEFAULT_DELIVERY_FEE", default="5000"))
+ORDER_REMINDER_MINUTES = env.int("ORDER_REMINDER_MINUTES", default=30)
+ORDER_EXPIRY_MINUTES = env.int("ORDER_EXPIRY_MINUTES", default=120)
+
+# Stakaba payments (apps/payments/stakaba.md). sk_test_ keys hit the sandbox, sk_live_ keys move money.
+STAKABA_API_KEY = env("STAKABA_API_KEY", default="")
+STAKABA_BASE_URL = env("STAKABA_BASE_URL", default="https://api.stakaba.com")
+# Secret path segment of the webhook URL (/api/payments/stakaba/webhook/<token>/). Webhooks are
+# unsigned, so with no token set the webhook is disabled.
+STAKABA_WEBHOOK_TOKEN = env("STAKABA_WEBHOOK_TOKEN", default="")
+# Confirm webhooks via GET /transactions/{ref}. Off until Stakaba accepts x-api-key there.
+STAKABA_CONFIRM_VIA_API = env.bool("STAKABA_CONFIRM_VIA_API", default=False)
