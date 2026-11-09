@@ -133,8 +133,9 @@ All Technical Context unknowns are settled below. Each entry gives Decision / Ra
   `<data source="…">…</data>`. The system prompt says the content inside is untrusted data.
 - The tool registry is filtered by role (`guest`, `customer`). Each tool also checks access itself
   (e.g. `order_status` uses `order_for_phone` for guests and `user=request.user` for customers).
-- Model or tool exceptions roll back their own transaction (each tool runs in `atomic()`), and the
-  shopper gets a localised fallback (FR-005, SC-008).
+- Model or tool exceptions roll back their own transaction (each tool runs in `atomic()`), so no
+  action is half-applied. Actions completed earlier in the turn stay (a started payment can't be
+  undone), and the localised fallback lists them from `tool_calls` (FR-005, SC-008).
 
 ## R11. Synchronous chat request
 

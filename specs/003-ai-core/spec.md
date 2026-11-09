@@ -158,7 +158,8 @@ the assistant about it, delete it, and check that the assistant no longer uses i
 ### Edge Cases
 
 - The model service is down or slow: the shopper gets a short apology in their language within
-  the time limit, the message is saved, and no cart or order change is half-done.
+  the time limit, the message is saved, no cart or order change is half-done, and any actions that
+  already completed in that turn are listed.
 - The model asks for more than 6 tool steps: the loop stops, and the shopper gets the best answer
   so far or a request to rephrase.
 - The model asks for an action that isn't allowed for this shopper (e.g. another guest's order):
@@ -287,14 +288,15 @@ the assistant about it, delete it, and check that the assistant no longer uses i
 - **SC-007**: A product change appears in the assistant's search results within 1 minute of being
   saved.
 - **SC-008**: When the model service is unavailable, 100% of chat requests still get a fallback
-  reply in the shopper's language and leave no partial cart or order changes.
+  reply in the shopper's language. Each action is all-or-nothing (no half-applied cart or order
+  change), and the reply states which actions had already completed.
 
 ## Assumptions
 
 - This phase exposes the assistant through an API only. The WhatsApp channel (004) and any
   shopper-facing chat screen come later. Voice notes are deferred to 004.
-- Rider and admin AI tools are out of scope. Admin knowledge management is via the API (and
-  optionally a minimal admin page).
+- Rider and admin AI tools are out of scope. Admin knowledge management is via the API only; an
+  admin web page for it is deferred to a later phase.
 - "Trained on shop data" means retrieval at question time, not model fine-tuning.
 - Cart, checkout, delivery fees, order numbers, order lookup and the payment-link flow from
   001/002 are reused unchanged. Stakaba is the payment provider (constitution v2.0.0).
