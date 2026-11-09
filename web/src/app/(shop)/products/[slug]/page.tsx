@@ -27,12 +27,13 @@ async function ProductDetail({ params }: { params: PageProps<"/products/[slug]">
   const [product, { locale, t }] = await Promise.all([getProduct(slug), getDictionary()]);
   if (!product) notFound();
   const description = localized(locale, product.description, product.description_sw);
+  const categoryName = localized(locale, product.category_name, product.category_name_sw);
 
   return (
     <div className="grid gap-8 md:grid-cols-2">
       <ProductGallery images={product.images ?? []} name={product.name} />
       <div className="flex flex-col gap-4">
-        {product.category_name && <p className="text-sm text-muted-foreground">{product.category_name}</p>}
+        {categoryName && <p className="text-sm text-muted-foreground">{categoryName}</p>}
         <h1 className="text-2xl font-semibold sm:text-3xl">{product.name}</h1>
         <Price price={product.price} compareAt={product.compare_at_price} className="text-xl" />
         <p className={product.in_stock ? "text-sm text-emerald-700" : "text-sm font-medium text-destructive"}>

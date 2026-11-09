@@ -2956,6 +2956,9 @@ components:
         category_name:
           type: string
           readOnly: true
+        category_name_sw:
+          type: string
+          readOnly: true
         description:
           type: string
         description_sw:
@@ -2995,6 +2998,7 @@ components:
           readOnly: true
       required:
       - category_name
+      - category_name_sw
       - created_at
       - id
       - images

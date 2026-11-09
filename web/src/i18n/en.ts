@@ -81,6 +81,7 @@ export const en = {
     continueShopping: "Continue shopping",
     subtotal: "Subtotal",
     itemCount: "{count} items",
+    itemCountOne: "1 item",
     remove: "Remove",
     clear: "Empty cart",
     checkout: "Checkout",

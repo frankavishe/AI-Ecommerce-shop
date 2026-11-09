@@ -74,7 +74,7 @@ export function CartView() {
       <section>
         <div className="mb-4 flex items-baseline justify-between">
           <h1 className="text-2xl font-semibold">{t.cart.title}</h1>
-          <span className="text-sm text-muted-foreground">{fmt(t.cart.itemCount, { count: cart.item_count })}</span>
+          <span className="text-sm text-muted-foreground">{cart.item_count === 1 ? t.cart.itemCountOne : fmt(t.cart.itemCount, { count: cart.item_count })}</span>
         </div>
         <ul className="divide-y rounded-xl border">
           {cart.items.map((line) => (

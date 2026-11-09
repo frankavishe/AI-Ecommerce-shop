@@ -19,6 +19,7 @@ class ProductImageSerializer(serializers.ModelSerializer):
 class ProductSerializer(serializers.ModelSerializer):
     images = ProductImageSerializer(many=True, read_only=True)
     category_name = serializers.CharField(source="category.name", read_only=True, default=None)
+    category_name_sw = serializers.CharField(source="category.name_sw", read_only=True, default=None)
     in_stock = serializers.BooleanField(read_only=True)
     uploaded_images = serializers.ListField(
         child=serializers.ImageField(), write_only=True, required=False
@@ -27,7 +28,7 @@ class ProductSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
         fields = [
-            "id", "name", "slug", "sku", "category", "category_name",
+            "id", "name", "slug", "sku", "category", "category_name", "category_name_sw",
             "description", "description_sw", "price", "compare_at_price",
             "stock", "low_stock_threshold", "in_stock", "attributes", "tags",
             "is_active", "images", "uploaded_images", "created_at", "updated_at",

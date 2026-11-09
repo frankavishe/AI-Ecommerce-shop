@@ -83,6 +83,7 @@ export const sw: Dictionary = {
     continueShopping: "Endelea kununua",
     subtotal: "Jumla ndogo",
     itemCount: "Bidhaa {count}",
+    itemCountOne: "Bidhaa 1",
     remove: "Ondoa",
     clear: "Futa kikapu",
     checkout: "Lipia",

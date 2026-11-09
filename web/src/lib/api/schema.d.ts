@@ -1122,6 +1122,7 @@ export interface components {
             sku?: string | null;
             category?: number | null;
             readonly category_name: string;
+            readonly category_name_sw: string;
             description?: string;
             /** Swahili description */
             description_sw?: string;
