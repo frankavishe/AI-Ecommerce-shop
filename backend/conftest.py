@@ -23,6 +23,24 @@ def _isolated_runtime(settings):
     cache.clear()
 
 
+@pytest.fixture(autouse=True)
+def fake_models():
+    """No test ever reaches a real model server (Constitution VI). apps/ai/tests re-use these."""
+    from apps.ai import clients
+    from apps.ai.testing import FakeChatModel, FakeEmbedder, FakeImageEmbedder, FakeVision
+
+    fakes = {"chat": FakeChatModel(), "embedder": FakeEmbedder(),
+             "image": FakeImageEmbedder(), "vision": FakeVision()}
+    clients.use_fakes(**fakes)
+    yield fakes
+    clients.reset_fakes()
+
+
+@pytest.fixture
+def chat_model(fake_models):
+    return fake_models["chat"]
+
+
 @pytest.fixture
 def api_client():
     return APIClient()
