@@ -267,6 +267,30 @@ paths:
               schema:
                 $ref: '#/components/schemas/AdminOrder'
           description: ''
+  /api/ai/chat/:
+    post:
+      operationId: api_ai_chat_create
+      description: Send one message (text and/or photo) to the shopping assistant.
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatRequestRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ChatRequestRequest'
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatResponse'
+          description: ''
   /api/auth/addresses/:
     get:
       operationId: api_auth_addresses_list
@@ -2171,6 +2195,133 @@ components:
           type: boolean
       required:
       - name
+    ChatOrder:
+      type: object
+      properties:
+        number:
+          type: string
+        status:
+          type: string
+        total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        currency:
+          type: string
+      required:
+      - currency
+      - number
+      - status
+      - total
+    ChatPayment:
+      type: object
+      properties:
+        method:
+          type: string
+        status:
+          type: string
+        checkout_link:
+          type: string
+        message:
+          type: string
+      required:
+      - checkout_link
+      - message
+      - method
+      - status
+    ChatProduct:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        slug:
+          type: string
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        compare_at_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          nullable: true
+        in_stock:
+          type: boolean
+        image:
+          type: string
+          nullable: true
+        category_name:
+          type: string
+          nullable: true
+      required:
+      - category_name
+      - compare_at_price
+      - id
+      - image
+      - in_stock
+      - name
+      - price
+      - slug
+    ChatRequestRequest:
+      type: object
+      properties:
+        message:
+          type: string
+          maxLength: 2000
+        image:
+          type: string
+          format: binary
+        conversation:
+          type: string
+          maxLength: 64
+        language:
+          $ref: '#/components/schemas/LanguageEnum'
+    ChatResponse:
+      type: object
+      properties:
+        conversation_token:
+          type: string
+        cart_token:
+          type: string
+          nullable: true
+        language:
+          $ref: '#/components/schemas/LanguageEnum'
+        state:
+          $ref: '#/components/schemas/StateEnum'
+        reply:
+          type: string
+        products:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChatProduct'
+        cart:
+          allOf:
+          - $ref: '#/components/schemas/Cart'
+          nullable: true
+        order:
+          allOf:
+          - $ref: '#/components/schemas/ChatOrder'
+          nullable: true
+        payment:
+          allOf:
+          - $ref: '#/components/schemas/ChatPayment'
+          nullable: true
+        error:
+          type: string
+          nullable: true
+      required:
+      - cart
+      - cart_token
+      - conversation_token
+      - error
+      - language
+      - order
+      - payment
+      - products
+      - reply
+      - state
     CheckoutRequest:
       type: object
       description: |-
@@ -2243,6 +2394,14 @@ components:
       required:
       - default_fee
       - regions
+    LanguageEnum:
+      enum:
+      - sw
+      - en
+      type: string
+      description: |-
+        * `sw` - sw
+        * `en` - en
     MergeCartRequest:
       type: object
       properties:
@@ -3228,6 +3387,14 @@ components:
         * `admin` - Admin
         * `system` - System
         * `provider` - Payment provider
+    StateEnum:
+      enum:
+      - active
+      - needs_human
+      type: string
+      description: |-
+        * `active` - active
+        * `needs_human` - needs_human
     StatusChangeRequest:
       type: object
       properties:

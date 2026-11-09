@@ -3,7 +3,7 @@
 All endpoints are under `/api/ai/` and must appear in the drf-spectacular schema (Constitution VII).
 Error bodies follow the existing shape `{"detail": "...", "code": "..."}`.
 
-## POST /api/ai/chat
+## POST /api/ai/chat/
 
 Auth: optional JWT. Without it, the shopper is a guest. Throttles: `ai_chat` 20/min per user/IP,
 10/min per conversation. Content type: `multipart/form-data` or `application/json` (text only).

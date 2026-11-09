@@ -87,6 +87,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/ai/chat/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Send one message (text and/or photo) to the shopping assistant. */
+        post: operations["api_ai_chat_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/auth/addresses/": {
         parameters: {
             query?: never;
@@ -729,6 +746,50 @@ export interface components {
             parent?: number | null;
             is_active?: boolean;
         };
+        ChatOrder: {
+            number: string;
+            status: string;
+            /** Format: decimal */
+            total: string;
+            currency: string;
+        };
+        ChatPayment: {
+            method: string;
+            status: string;
+            checkout_link: string;
+            message: string;
+        };
+        ChatProduct: {
+            id: number;
+            name: string;
+            slug: string;
+            /** Format: decimal */
+            price: string;
+            /** Format: decimal */
+            compare_at_price: string | null;
+            in_stock: boolean;
+            image: string | null;
+            category_name: string | null;
+        };
+        ChatRequestRequest: {
+            message?: string;
+            /** Format: binary */
+            image?: string;
+            conversation?: string;
+            language?: components["schemas"]["LanguageEnum"];
+        };
+        ChatResponse: {
+            conversation_token: string;
+            cart_token: string | null;
+            language: components["schemas"]["LanguageEnum"];
+            state: components["schemas"]["StateEnum"];
+            reply: string;
+            products: components["schemas"]["ChatProduct"][];
+            cart: components["schemas"]["Cart"] | null;
+            order: components["schemas"]["ChatOrder"] | null;
+            payment: components["schemas"]["ChatPayment"] | null;
+            error: string | null;
+        };
         /**
          * @description Guest contact and address, or a saved address_id for logged-in customers.
          *
@@ -768,6 +829,12 @@ export interface components {
             /** Format: decimal */
             default_fee: string;
         };
+        /**
+         * @description * `sw` - sw
+         *     * `en` - en
+         * @enum {string}
+         */
+        LanguageEnum: "sw" | "en";
         MergeCartRequest: {
             cart_token: string;
         };
@@ -1243,6 +1310,12 @@ export interface components {
          * @enum {string}
          */
         SourceEnum: "customer" | "admin" | "system" | "provider";
+        /**
+         * @description * `active` - active
+         *     * `needs_human` - needs_human
+         * @enum {string}
+         */
+        StateEnum: "active" | "needs_human";
         StatusChangeRequest: {
             status: components["schemas"]["OrderStatusEnum"];
             /** @default  */
@@ -1529,6 +1602,30 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AdminOrder"];
+                };
+            };
+        };
+    };
+    api_ai_chat_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ChatRequestRequest"];
+                "multipart/form-data": components["schemas"]["ChatRequestRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChatResponse"];
                 };
             };
         };

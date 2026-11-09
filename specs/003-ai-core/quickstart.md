@@ -41,7 +41,7 @@ SC-001/SC-002 are judged on the production models.
 
 ```bash
 # Story 1: Swahili product question
-curl -s -X POST localhost:8000/api/ai/chat -H 'Content-Type: application/json' \
+curl -s -X POST localhost:8000/api/ai/chat/ -H 'Content-Type: application/json' \
   -d '{"message":"nataka viatu vyekundu chini ya 50000"}'
 # → reply in Swahili; products[] lists red sneakers with the DB price; keep conversation_token
 
@@ -58,7 +58,7 @@ curl -X POST localhost:8000/api/ai/admin/knowledge/ -H "Authorization: Bearer <a
 curl ... -d '{"message":"Can I return shoes?"}'                                  # quotes the document
 
 # Story 4: photo
-curl -s -X POST localhost:8000/api/ai/chat -F image=@red-shoe.jpg -F message="hii mnayo?"
+curl -s -X POST localhost:8000/api/ai/chat/ -F image=@red-shoe.jpg -F message="hii mnayo?"
 ```
 
 ## 5. Failure checks

@@ -31,8 +31,11 @@ All Technical Context unknowns are settled below. Each entry gives Decision / Ra
   1. pgvector cosine distance on `text_vec vector(1024)`, with an HNSW index (`vector_cosine_ops`).
   2. Postgres full-text on a stored `tsvector` built with the `simple` config (it works for both
      Swahili and English, since Postgres has no Swahili stemmer), with weights: name/category A,
-     tags/attributes B, descriptions (en+sw) C. Queried with `websearch_to_tsquery('simple', q)`,
-     plus a prefix fallback (`to_tsquery` with `:*`) when there are no hits.
+     tags/attributes B, descriptions (en+sw) C. Queried as an OR of prefix terms
+     (`red:* | shoes:* | …`, raw `to_tsquery`), so a long shopper sentence still matches; `ts_rank`
+     orders the hits. (Changed from `websearch_to_tsquery` during US1: its AND semantics missed
+     "red shoes under 50000".) The vector list also has a cutoff (`AI_PRODUCT_MIN_SIMILARITY`,
+     default 0.3) so nonsense queries return nothing; `rag_eval` tunes it.
   Filters (`is_active`, `stock>0`, price range, category including children) are applied in both
   SQL queries, before fusion. Prices are always read from `Product` rows after fusion.
 - **Rationale**: Meaning-based search handles "viatu vyekundu" → "red sneakers" across languages
