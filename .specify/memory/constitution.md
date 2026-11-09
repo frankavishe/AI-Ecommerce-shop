@@ -25,19 +25,24 @@ integrity cannot depend on it.
 
 ### III. Self-Hosted AI, Local Payment Rails
 
-- AI features MUST use self-hosted open models behind OpenAI-compatible endpoints configured by
-  environment variables. Proprietary hosted AI APIs MUST NOT be introduced.
-- Payments MUST go through ClickPesa (mobile money + cards). Alternative gateways require a
+- AI features MUST use self-hosted open models reached only through OpenAI-compatible HTTP
+  endpoints whose base URL, model name and key come from environment variables. Development MAY
+  use a local CPU server (e.g. Ollama); production uses self-hosted vLLM/TEI on a GPU box.
+  Switching between them MUST need configuration only, not code changes. Proprietary hosted AI
+  APIs MUST NOT be introduced.
+- Payments MUST go through Stakaba (mobile money + cards). Alternative gateways require a
   constitution amendment.
 - Retrieved/user-supplied content passed to an LLM MUST be treated as data, never instructions.
 
-Rationale: no dependency on foreign AI vendors; ClickPesa covers M-Pesa, Tigo Pesa, Airtel Money,
-HaloPesa and cards.
+Rationale: no dependency on foreign AI vendors; Stakaba covers Tanzanian mobile money and cards
+and replaced ClickPesa on 2026-11-02.
 
 ### IV. Verified, Idempotent Integrations
 
-- Every inbound webhook (ClickPesa, WhatsApp) MUST verify its signature/checksum and reject
-  invalid requests.
+- Every inbound webhook (Stakaba, WhatsApp) MUST be authenticated and reject anything else:
+  either by verifying the provider's signature/checksum, or, where the provider does not sign
+  (Stakaba), by a secret per-deployment URL token plus a server-side status re-query with the
+  provider before any state change.
 - Webhook handling MUST be idempotent: replays of the same event MUST NOT change state twice.
 - Payment status MUST be confirmed against the provider (status query) and the paid amount MUST
   match the order total before an order is marked paid.
@@ -59,7 +64,8 @@ actions.
 ### VI. Test-First (NON-NEGOTIABLE)
 
 - New behaviour starts with failing `pytest`/`pytest-django` tests, then implementation.
-- External services (ClickPesa, WhatsApp, model servers) MUST be mocked in automated tests.
+- External services (Stakaba, WhatsApp, model servers) MUST be mocked in automated tests.
+  Tests against real services are opt-in pytest markers (e.g. `sandbox`), never the default run.
 - Money, stock, permissions and webhook paths MUST have tests for the failure cases, not only the
   happy path.
 
@@ -78,8 +84,10 @@ Rationale: a single small team; one well-documented API keeps three clients cons
 
 - Backend: Python, Django 5, DRF, simplejwt, Celery + Redis, PostgreSQL 16 + pgvector.
 - Web: Next.js (App Router, TypeScript). Mobile: Flutter (Android).
-- Messaging: Meta WhatsApp Cloud API. Payments: ClickPesa.
-- AI: vLLM (Qwen3-VL), TEI (bge-m3), SigLIP2, faster-whisper on a rented GPU box.
+- Messaging: Meta WhatsApp Cloud API. Payments: Stakaba.
+- AI (production): vLLM (Qwen3-VL), TEI (bge-m3), SigLIP2, faster-whisper on a rented GPU box.
+- AI (development): small open models on CPU behind the same OpenAI-compatible API (e.g. Ollama
+  with Qwen3 and bge-m3), and the same embedding models and dimensions as production.
 - Local development runs through `infra/docker-compose.yml`.
 
 ## Development Workflow
@@ -100,4 +108,4 @@ Every plan and review checks compliance; any deviation MUST be recorded with its
 the plan's Complexity Tracking table. Runtime guidance for agents lives in `CLAUDE.md` and the
 `.claude/skills/speckit-*` skills.
 
-**Version**: 1.0.0 | **Ratified**: 2026-10-28 | **Last Amended**: 2026-10-28
+**Version**: 2.0.0 | **Ratified**: 2026-10-28 | **Last Amended**: 2026-11-09
