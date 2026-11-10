@@ -145,6 +145,8 @@ def handle_message(conversation: Conversation, text="", image=None, user=None, l
                     "content": prompts.wrap_data(f"tool:{call['name']}",
                                                  json.dumps(result, ensure_ascii=False, default=str)),
                 })
+            if conversation.state == Conversation.State.NEEDS_HUMAN:
+                reply = prompts.HANDOFF_NOTICE[lang]  # staff take over; the model says nothing more
     except clients.ModelUnavailable as exc:
         logger.warning("Chat model unavailable: %s", exc)
         error = "model_unavailable"

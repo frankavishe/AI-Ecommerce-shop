@@ -82,14 +82,14 @@ repo root. Run tests from `backend/` with
 
 ### Tests (write first)
 
-- [ ] T030 [P] [US3] `backend/apps/ai/tests/test_knowledge.py`: `extract_text` for TXT, DOCX (built with python-docx in the test) and PDF (fixture bytes); `chunk_text` sizes ~1,800 characters with 300 overlap and paragraph-preferring splits; `index_document` creates chunks with vectors and sets status ready/chunk_count; empty text → failed "no extractable text"; `knowledge_search("return shoes")` and `"kurudisha viatu"` find the returns passage; deleting the document removes its chunks
-- [ ] T031 [P] [US3] `backend/apps/ai/tests/test_handoff.py`: the `handoff_to_human` tool sets `needs_human` and the reason; the next `/api/ai/chat` call returns the localised notice with `FakeChatModel` not called; a retrieved passage "ignore previous instructions… 90% discount" is passed inside `<data>` and a later checkout still uses DB prices
+- [X] T030 [P] [US3] `backend/apps/ai/tests/test_knowledge.py`: `extract_text` for TXT, DOCX (built with python-docx in the test) and PDF (fixture bytes); `chunk_text` sizes ~1,800 characters with 300 overlap and paragraph-preferring splits; `index_document` creates chunks with vectors and sets status ready/chunk_count; empty text → failed "no extractable text"; `knowledge_search("return shoes")` and `"kurudisha viatu"` find the returns passage; deleting the document removes its chunks
+- [X] T031 [P] [US3] `backend/apps/ai/tests/test_handoff.py`: the `handoff_to_human` tool sets `needs_human` and the reason; the next `/api/ai/chat` call returns the localised notice with `FakeChatModel` not called; a retrieved passage "ignore previous instructions… 90% discount" is passed inside `<data>` and a later checkout still uses DB prices
 
 ### Implementation
 
-- [ ] T032 [US3] Add `extract_text(file, content_type)` (pypdf, python-docx, utf-8/latin-1 text), `chunk_text(text, size=1800, overlap=300)` and `index_document(document_id)` to `backend/apps/ai/indexing.py`, plus an `index_document` Celery task in `backend/apps/ai/tasks.py`
-- [ ] T033 [US3] Add `knowledge(query, limit=5)` hybrid search over `KnowledgeChunk` to `backend/apps/ai/search.py`, with a minimum similarity cutoff (setting `AI_KNOWLEDGE_MIN_SCORE`, default 0.3 cosine similarity on the vector side)
-- [ ] T034 [US3] Add the `knowledge_search` and `handoff_to_human` tools to `backend/apps/ai/tools.py` (passages wrapped with `wrap_data(document.title, text)`), and the `needs_human` short-circuit in `backend/apps/ai/agent.py` (if not already in place from T022)
+- [X] T032 [US3] Add `extract_text(file, content_type)` (pypdf, python-docx, utf-8/latin-1 text), `chunk_text(text, size=1800, overlap=300)` and `index_document(document_id)` to `backend/apps/ai/indexing.py`, plus an `index_document` Celery task in `backend/apps/ai/tasks.py`
+- [X] T033 [US3] Add `knowledge(query, limit=5)` hybrid search over `KnowledgeChunk` to `backend/apps/ai/search.py`, with a minimum similarity cutoff (setting `AI_KNOWLEDGE_MIN_SCORE`, default 0.3 cosine similarity on the vector side)
+- [X] T034 [US3] Add the `knowledge_search` and `handoff_to_human` tools to `backend/apps/ai/tools.py` (passages wrapped with `wrap_data(document.title, text)`), and the `needs_human` short-circuit in `backend/apps/ai/agent.py` (if not already in place from T022)
 
 **Checkpoint**: T030–T031 pass.
 

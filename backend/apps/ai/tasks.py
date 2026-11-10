@@ -12,6 +12,16 @@ def index_product(self, product_id, force=False):
     return entry.status if entry else "deleted"
 
 
+@shared_task(bind=True, max_retries=3)
+def index_document(self, document_id):
+    document = indexing.index_document(document_id)
+    if document is None:
+        return "deleted"
+    if getattr(document, "retryable", False) and not self.request.is_eager:
+        raise self.retry(countdown=30 * (2 ** self.request.retries))
+    return document.status
+
+
 @shared_task
 def purge_old_conversations():
     """Filled in by US5 (T043)."""

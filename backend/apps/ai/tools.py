@@ -28,7 +28,8 @@ from apps.payments.models import Payment
 from apps.payments.services import check_payment_options, start_payment
 from apps.payments.stakaba import NETWORKS
 
-from . import search
+from . import prompts, search
+from .models import Conversation
 
 GUEST, CUSTOMER = "guest", "customer"
 ALL_ROLES = (GUEST, CUSTOMER)
@@ -509,3 +510,41 @@ def order_status(ctx, order_number=None, phone=None):
         "latest_event": {"status": event.status, "note": event.note,
                          "at": event.created_at.isoformat()} if event else None,
     }
+
+
+# --- Support ------------------------------------------------------------------------------------
+
+
+@register(
+    "knowledge_search",
+    "Search the shop's policy and help documents (returns, delivery, payments, opening hours, FAQs). "
+    "Use it for any question about how the shop works.",
+    {"query": {"type": "string", "maxLength": 300,
+               "description": "The shopper's question, e.g. 'return policy' or 'gharama ya usafirishaji'."}},
+    required=["query"],
+)
+def knowledge_search(ctx, query):
+    passages = search.knowledge(query)
+    return {
+        "count": len(passages),
+        "passages": [{"document": chunk.document.title, "text": prompts.wrap_data(chunk.document.title, chunk.text)}
+                     for chunk in passages],
+        **({} if passages else {"note": "Nothing found. Say you don't know and offer a staff member."}),
+    }
+
+
+@register(
+    "handoff_to_human",
+    "Pass the conversation to a staff member. Use it when the shopper asks for a person, is upset, "
+    "or the tools cannot answer.",
+    {"reason": {"type": "string", "maxLength": 500, "description": "Why a person is needed, in a few words."}},
+    required=["reason"],
+    mutates=True,
+    label={"sw": "nimekuunganisha na mhudumu", "en": "passed you to a staff member"},
+)
+def handoff_to_human(ctx, reason):
+    conversation = ctx.conversation
+    conversation.state = Conversation.State.NEEDS_HUMAN
+    conversation.handoff_reason = reason.strip()
+    conversation.save(update_fields=["state", "handoff_reason", "updated_at"])
+    return {"state": conversation.state}

@@ -100,8 +100,8 @@ class FakeVision:
         return self.caption
 
 
-def tool_call(name, **arguments):
-    return {"name": name, "arguments": arguments}
+def tool_call(tool_name, /, **arguments):
+    return {"name": tool_name, "arguments": arguments}
 
 
 class FakeChatModel:

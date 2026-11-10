@@ -1,4 +1,5 @@
-"""Hybrid search: pgvector cosine + Postgres full-text, fused with Reciprocal Rank Fusion (R3)."""
+"""Hybrid search: pgvector cosine + Postgres full-text, fused with Reciprocal Rank Fusion (R3).
+Covers products and knowledge passages."""
 
 import logging
 import re
@@ -11,6 +12,7 @@ from pgvector.django import CosineDistance
 from apps.catalog.models import Category, Product
 
 from . import clients
+from .models import KnowledgeChunk, KnowledgeDocument
 
 logger = logging.getLogger(__name__)
 
@@ -105,3 +107,33 @@ def hybrid_products(query, min_price=None, max_price=None, category=None, in_sto
     ids = rrf(_vector_ids(qs, query), _keyword_ids(qs, query))[:limit]
     products = Product.objects.select_related("category").prefetch_related("images").in_bulk(ids)
     return [products[pk] for pk in ids if pk in products]
+
+
+def knowledge(query, limit=5):
+    """Knowledge passages for a question, best first. Vector hits must reach
+    AI_KNOWLEDGE_MIN_SCORE cosine similarity; keyword hits are fused in with RRF."""
+    query = (query or "").strip()
+    if not query:
+        return []
+    qs = KnowledgeChunk.objects.filter(document__status=KnowledgeDocument.Status.READY)
+    vector_ids = []
+    try:
+        vector = clients.embed_texts([query])[0]
+    except clients.ModelUnavailable as exc:
+        logger.warning("Knowledge vector search skipped: %s", exc)
+    else:
+        vector_ids = list(
+            qs.annotate(distance=CosineDistance("embedding", vector))
+            .filter(distance__lte=1.0 - settings.AI_KNOWLEDGE_MIN_SCORE)
+            .order_by("distance", "pk").values_list("pk", flat=True)[:CANDIDATES]
+        )
+    keyword_ids = []
+    tsquery = keyword_query(query)
+    if tsquery is not None:
+        keyword_ids = list(
+            qs.filter(tsv=tsquery).annotate(rank=SearchRank(F("tsv"), tsquery))
+            .order_by("-rank", "pk").values_list("pk", flat=True)[:CANDIDATES]
+        )
+    ids = rrf(vector_ids, keyword_ids)[:limit]
+    chunks = KnowledgeChunk.objects.select_related("document").in_bulk(ids)
+    return [chunks[pk] for pk in ids if pk in chunks]
