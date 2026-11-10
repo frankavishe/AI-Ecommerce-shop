@@ -3,7 +3,7 @@
 | Env var | Dev (Ollama, CPU) | Prod (GPU box) | Used for |
 |---|---|---|---|
 | `AI_CHAT_BASE_URL` | `http://localhost:11434/v1` | `http://gpu:8000/v1` (vLLM) | chat + tool calls |
-| `AI_CHAT_MODEL` | `qwen3:4b` | `Qwen/Qwen3-VL-8B-Instruct` | |
+| `AI_CHAT_MODEL` | `qwen3:4b-instruct-2507-q4_K_M` (not plain `qwen3:4b`, the thinking build) | `Qwen/Qwen3-VL-8B-Instruct` | |
 | `AI_CHAT_NO_THINK` | `true` | `false` | appends `/no_think` (R2) |
 | `AI_VISION_BASE_URL` | = chat URL | = chat URL | photo captions |
 | `AI_VISION_MODEL` | `qwen2.5vl:3b` | `Qwen/Qwen3-VL-8B-Instruct` | |

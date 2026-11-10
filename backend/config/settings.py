@@ -172,7 +172,7 @@ STAKABA_CONFIRM_VIA_API = env.bool("STAKABA_CONFIRM_VIA_API", default=False)
 
 # --- AI assistant (specs/003-ai-core/contracts/model-endpoints.md) ---
 AI_CHAT_BASE_URL = env("AI_CHAT_BASE_URL", default="http://localhost:11434/v1")
-AI_CHAT_MODEL = env("AI_CHAT_MODEL", default="qwen3:4b")
+AI_CHAT_MODEL = env("AI_CHAT_MODEL", default="qwen3:4b-instruct-2507-q4_K_M")
 AI_CHAT_NO_THINK = env.bool("AI_CHAT_NO_THINK", default=True)
 AI_VISION_BASE_URL = env("AI_VISION_BASE_URL", default="") or AI_CHAT_BASE_URL
 AI_VISION_MODEL = env("AI_VISION_MODEL", default="qwen2.5vl:3b")

@@ -6,7 +6,7 @@ All Technical Context unknowns are settled below. Each entry gives Decision / Ra
 
 - **Decision**: Use one `openai` SDK client factory (`apps/ai/clients.py`) for chat, vision and text
   embeddings, with base URL, model and key taken from env. Dev uses Ollama's OpenAI-compatible
-  `/v1` (chat `qwen3:4b`, vision `qwen2.5vl:3b`, embeddings `bge-m3`). Prod uses vLLM (Qwen3-VL-8B,
+  `/v1` (chat `qwen3:4b-instruct-2507-q4_K_M`, vision `qwen2.5vl:3b`, embeddings `bge-m3`). Prod uses vLLM (Qwen3-VL-8B,
   which handles chat and vision as one model) and TEI (`bge-m3`, OpenAI-compatible
   `/v1/embeddings`). Image vectors come from a small HTTP service (R4) through `httpx`.
 - **Rationale**: Constitution III says switching between dev and prod is config-only. `openai`

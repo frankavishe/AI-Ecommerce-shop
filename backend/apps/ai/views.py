@@ -68,7 +68,6 @@ class ChatView(APIView):
         data = ChatRequestSerializer(data=request.data)
         data.is_valid(raise_exception=True)
         conversation = resolve_conversation(request, data.validated_data.get("conversation"))
-        cart_token = guest_cart_token(conversation)
         reply = agent.handle_message(
             conversation,
             text=data.validated_data.get("message", ""),
@@ -76,7 +75,8 @@ class ChatView(APIView):
             user=request.user,
             language=data.validated_data.get("language"),
         )
-        conversation.refresh_from_db(fields=["state", "language"])
+        conversation.refresh_from_db(fields=["state", "language", "cart"])
+        cart_token = guest_cart_token(conversation)  # after the turn: a tool may have replaced an expired cart
         return Response({
             "conversation_token": conversation.token,
             "cart_token": cart_token,

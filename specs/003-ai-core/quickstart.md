@@ -18,7 +18,7 @@ model-down fallback (SC-008).
 ## 2. Local models (CPU)
 
 1. Install Ollama (`winget install Ollama.Ollama`), then:
-   `ollama pull qwen3:4b && ollama pull qwen2.5vl:3b && ollama pull bge-m3`
+   `ollama pull qwen3:4b-instruct-2507-q4_K_M && ollama pull qwen2.5vl:3b && ollama pull bge-m3`
 2. Start the SigLIP service: `docker compose -f infra/docker-compose.yml --profile ai up -d siglip`
    (the first start downloads ~375 MB of weights).
 3. Set the dev values in `.env` from [contracts/model-endpoints.md](contracts/model-endpoints.md).
