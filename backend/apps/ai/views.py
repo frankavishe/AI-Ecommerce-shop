@@ -1,17 +1,26 @@
+from django.db import transaction
+from django.db.models import Count, OuterRef, Subquery
 from django.utils import timezone
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import OpenApiParameter, extend_schema
+from rest_framework import mixins, status, viewsets
+from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
+from apps.accounts.permissions import IsShopAdmin
+from apps.catalog.models import Product, ProductImage
 from apps.orders.models import Cart
 from apps.orders.services import GUEST_CART_LIFETIME, merge_carts
 
-from . import agent
-from .models import Conversation
-from .serializers import ChatRequestSerializer, ChatResponseSerializer
+from . import agent, tasks
+from .models import ChatMessage, Conversation, IndexStatus, KnowledgeDocument, ProductImageIndex, ProductIndex
+from .serializers import (
+    AdminConversationDetailSerializer, AdminConversationSerializer, ChatRequestSerializer, ChatResponseSerializer,
+    IndexStatusSerializer, KnowledgeDocumentSerializer, ReindexRequestSerializer,
+)
 from .throttles import ConversationRateThrottle
 
 NOT_FOUND = "Conversation not found."
@@ -86,3 +95,125 @@ class ChatView(APIView):
             **reply.payload,
             "error": reply.error or None,
         })
+
+
+# --- Admin (specs/003-ai-core/contracts/chat-api.md) --------------------------------------------
+
+
+def _queue(task, *args, **kwargs):
+    transaction.on_commit(lambda: task.delay(*args, **kwargs))
+
+
+class KnowledgeDocumentViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, mixins.RetrieveModelMixin,
+                               mixins.DestroyModelMixin, viewsets.GenericViewSet):
+    """Shop policy and help documents the assistant answers from."""
+
+    queryset = KnowledgeDocument.objects.all()
+    serializer_class = KnowledgeDocumentSerializer
+    permission_classes = [IsShopAdmin]
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
+
+    def perform_create(self, serializer):
+        document = serializer.save(uploaded_by=self.request.user)
+        _queue(tasks.index_document, document.pk)
+
+    def perform_destroy(self, instance):
+        instance.file.delete(save=False)
+        instance.delete()
+
+    @extend_schema(request=None, responses={202: KnowledgeDocumentSerializer})
+    @action(detail=True, methods=["post"])
+    def reindex(self, request, pk=None):
+        document = self.get_object()
+        document.status = KnowledgeDocument.Status.PROCESSING
+        document.error = ""
+        document.save(update_fields=["status", "error"])
+        _queue(tasks.index_document, document.pk)
+        return Response(self.get_serializer(document).data, status=status.HTTP_202_ACCEPTED)
+
+
+def _counts(model, missing=0, pending=("pending",)):
+    rows = {row["status"]: row["n"]
+            for row in model.objects.order_by().values("status").annotate(n=Count("pk"))}
+    return {
+        "ready": rows.get("ready", 0),
+        "pending": sum(rows.get(value, 0) for value in pending) + missing,
+        "failed": rows.get("failed", 0),
+    }
+
+
+class IndexStatusView(APIView):
+    """How much of the catalog and knowledge base is searchable, and what failed."""
+
+    permission_classes = [IsShopAdmin]
+    FAILURE_LIMIT = 50
+
+    @extend_schema(responses=IndexStatusSerializer)
+    def get(self, request):
+        failures = [
+            {"kind": "product", "id": entry.product_id, "name": entry.product.name, "error": entry.error}
+            for entry in ProductIndex.objects.filter(status=IndexStatus.FAILED)
+            .select_related("product")[: self.FAILURE_LIMIT]
+        ]
+        failures += [
+            {"kind": "image", "id": entry.image_id, "name": f"{entry.product.name} (photo {entry.image_id})",
+             "error": entry.error}
+            for entry in ProductImageIndex.objects.filter(status=IndexStatus.FAILED)
+            .select_related("product")[: self.FAILURE_LIMIT]
+        ]
+        failures += [
+            {"kind": "knowledge", "id": document.pk, "name": document.title, "error": document.error}
+            for document in KnowledgeDocument.objects.filter(status=KnowledgeDocument.Status.FAILED)
+            [: self.FAILURE_LIMIT]
+        ]
+        return Response({
+            "products": _counts(ProductIndex, missing=Product.objects.filter(ai_index__isnull=True).count()),
+            "images": _counts(ProductImageIndex, missing=ProductImage.objects.filter(ai_index__isnull=True).count()),
+            "knowledge": _counts(KnowledgeDocument, pending=("processing",)),
+            "failures": failures,
+        })
+
+
+class ReindexView(APIView):
+    """Queue a rebuild of the product and/or knowledge indexes."""
+
+    permission_classes = [IsShopAdmin]
+
+    @extend_schema(request=ReindexRequestSerializer, responses={202: ReindexRequestSerializer})
+    def post(self, request):
+        data = ReindexRequestSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        _queue(tasks.reindex_all, **data.validated_data)
+        return Response(data.validated_data, status=status.HTTP_202_ACCEPTED)
+
+
+@extend_schema(parameters=[OpenApiParameter("state", str, enum=Conversation.State.values,
+                                            description="Only conversations in this state.")])
+class AdminConversationViewSet(viewsets.ReadOnlyModelViewSet):
+    """Assistant conversations, e.g. the ones handed to staff (state=needs_human)."""
+
+    permission_classes = [IsShopAdmin]
+
+    def get_queryset(self):
+        last_text = (ChatMessage.objects.filter(conversation=OuterRef("pk"))
+                     .order_by("-created_at", "-id").values("text")[:1])
+        qs = (Conversation.objects.select_related("user").annotate(last_message=Subquery(last_text))
+              .order_by("-updated_at"))
+        state = self.request.query_params.get("state")
+        if state:
+            qs = qs.filter(state=state)
+        if self.action == "retrieve":
+            qs = qs.prefetch_related("messages")
+        return qs
+
+    def get_serializer_class(self):
+        return AdminConversationDetailSerializer if self.action == "retrieve" else AdminConversationSerializer
+
+    @extend_schema(request=None, responses=AdminConversationSerializer)
+    @action(detail=True, methods=["post"])
+    def release(self, request, pk=None):
+        conversation = self.get_object()
+        conversation.state = Conversation.State.ACTIVE
+        conversation.handoff_reason = ""
+        conversation.save(update_fields=["state", "handoff_reason", "updated_at"])
+        return Response(AdminConversationSerializer(self.get_queryset().get(pk=conversation.pk)).data)

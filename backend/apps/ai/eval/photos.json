@@ -1,0 +1,28 @@
+{
+  "catalog_images": {
+    "SNK-RED-42": ["photos/catalog/SNK-RED-42.jpg"],
+    "SNK-WHT-40": ["photos/catalog/SNK-WHT-40.jpg"],
+    "SHO-SND-BLU": ["photos/catalog/SHO-SND-BLU.jpg"],
+    "SHO-HEEL-BLK": ["photos/catalog/SHO-HEEL-BLK.jpg"],
+    "CLO-KTG-01": ["photos/catalog/CLO-KTG-01.jpg"],
+    "CLO-TSH-WHT": ["photos/catalog/CLO-TSH-WHT.jpg"],
+    "PHN-CHG-USBC": ["photos/catalog/PHN-CHG-USBC.jpg"],
+    "PHN-PWR-10K": ["photos/catalog/PHN-PWR-10K.jpg"],
+    "ELE-SPK-BT": ["photos/catalog/ELE-SPK-BT.jpg"],
+    "ELE-SOL-LMP": ["photos/catalog/ELE-SOL-LMP.jpg"],
+    "KIT-THM-2L": ["photos/catalog/KIT-THM-2L.jpg"],
+    "KIT-BLN-15": ["photos/catalog/KIT-BLN-15.jpg"]
+  },
+  "cases": [
+    {"file": "photos/queries/red-sneakers.jpg", "lang": "sw", "note": "", "expect": ["SNK-RED-42"]},
+    {"file": "photos/queries/white-sneakers.jpg", "lang": "en", "note": "size 40", "expect": ["SNK-WHT-40"]},
+    {"file": "photos/queries/blue-sandals.jpg", "lang": "sw", "note": "", "expect": ["SHO-SND-BLU"]},
+    {"file": "photos/queries/black-heels.jpg", "lang": "en", "note": "", "expect": ["SHO-HEEL-BLK"]},
+    {"file": "photos/queries/kitenge-dress.jpg", "lang": "sw", "note": "gauni kama hili", "expect": ["CLO-KTG-01"]},
+    {"file": "photos/queries/phone-charger.jpg", "lang": "en", "note": "", "expect": ["PHN-CHG-USBC"]},
+    {"file": "photos/queries/power-bank.jpg", "lang": "sw", "note": "", "expect": ["PHN-PWR-10K"]},
+    {"file": "photos/queries/speaker.jpg", "lang": "en", "note": "", "expect": ["ELE-SPK-BT"]},
+    {"file": "photos/queries/solar-lamp.jpg", "lang": "sw", "note": "taa kama hii", "expect": ["ELE-SOL-LMP"]},
+    {"file": "photos/queries/thermos.jpg", "lang": "en", "note": "", "expect": ["KIT-THM-2L"]}
+  ]
+}
