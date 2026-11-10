@@ -257,6 +257,26 @@ def get_product(ctx, product_id):
     }
 
 
+@register(
+    "search_by_image",
+    "Find products that look like the photo the shopper attached to this message.",
+    {"note": {"type": "string", "maxLength": 200,
+              "description": "Anything the shopper said about the photo, e.g. 'in size 42' or 'rangi nyeusi'."},
+     "limit": {"type": "integer", "minimum": 1, "maximum": 8, "description": "How many results (default 5)."}},
+)
+def search_by_image(ctx, note="", limit=5):
+    if not ctx.image_bytes:
+        return {"ok": False, "error": "There is no photo in this message. Ask the shopper to send one."}
+    result = search.by_image(ctx.image_bytes, note=note, limit=limit)
+    ctx.show_products(result.products)
+    return {
+        "used_image_search": result.used_image_search,
+        "photo_description": result.caption,
+        "count": len(result.products),
+        "products": [product_brief(p, ctx.language) for p in result.products],
+    }
+
+
 # --- Cart tools ---------------------------------------------------------------------------------
 
 

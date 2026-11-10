@@ -9,6 +9,15 @@ x-backend: &backend
     DATABASE_URL: postgres://shop:shop@db:5432/shop
     REDIS_URL: redis://redis:6379/0
     CACHE_URL: redis://redis:6379/1
+    # AI endpoints (003): .env holds the localhost URLs for running Django outside docker. Inside the
+    # containers, Ollama on the host is host.docker.internal and SigLIP is the `siglip` service
+    # (start it with --profile ai). Override with the *_DOCKER vars, e.g. for a GPU box.
+    AI_CHAT_BASE_URL: ${AI_CHAT_BASE_URL_DOCKER:-http://host.docker.internal:11434/v1}
+    AI_VISION_BASE_URL: ${AI_VISION_BASE_URL_DOCKER:-}
+    AI_EMBED_BASE_URL: ${AI_EMBED_BASE_URL_DOCKER:-http://host.docker.internal:11434/v1}
+    AI_IMAGE_EMBED_URL: ${AI_IMAGE_EMBED_URL_DOCKER:-http://siglip:8090}
+  extra_hosts:
+    - "host.docker.internal:host-gateway"
   depends_on:
     db:
       condition: service_healthy
@@ -67,7 +76,20 @@ services:
     depends_on:
       - api
 
+  siglip:
+    # Image embeddings for photo search (CPU). Not started by default:
+    #   docker compose -f infra/docker-compose.yml --profile ai up -d siglip
+    profiles: ["ai"]
+    build: ../ai/siglip
+    environment:
+      SIGLIP_API_KEY: ${SIGLIP_API_KEY:-}
+    ports:
+      - "8090:8090"
+    volumes:
+      - hf_cache:/models
+
 volumes:
   pgdata:
   media:
   web_node_modules:
+  hf_cache:

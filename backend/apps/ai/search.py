@@ -1,8 +1,9 @@
 """Hybrid search: pgvector cosine + Postgres full-text, fused with Reciprocal Rank Fusion (R3).
-Covers products and knowledge passages."""
+Covers products, knowledge passages and photo search."""
 
 import logging
 import re
+from dataclasses import dataclass
 
 from django.conf import settings
 from django.contrib.postgres.search import SearchQuery, SearchRank
@@ -12,7 +13,8 @@ from pgvector.django import CosineDistance
 from apps.catalog.models import Category, Product
 
 from . import clients
-from .models import KnowledgeChunk, KnowledgeDocument
+from .images import prepare_image
+from .models import IndexStatus, KnowledgeChunk, KnowledgeDocument, ProductImageIndex
 
 logger = logging.getLogger(__name__)
 
@@ -137,3 +139,55 @@ def knowledge(query, limit=5):
     ids = rrf(vector_ids, keyword_ids)[:limit]
     chunks = KnowledgeChunk.objects.select_related("document").in_bulk(ids)
     return [chunks[pk] for pk in ids if pk in chunks]
+
+
+@dataclass
+class ImageSearchResult:
+    products: list
+    used_image_search: bool
+    caption: str
+
+
+def _image_ids(qs, image_bytes, limit):
+    """Products whose photos are nearest to `image_bytes` (best photo per product)."""
+    vector = clients.embed_image(image_bytes)
+    max_distance = 1.0 - settings.AI_IMAGE_MIN_SIMILARITY
+    rows = (
+        ProductImageIndex.objects.filter(status=IndexStatus.READY, image_vec__isnull=False, product__in=qs)
+        .annotate(distance=CosineDistance("image_vec", vector))
+        .filter(distance__lte=max_distance)
+        .order_by("distance", "pk").values_list("product_id", flat=True)[:CANDIDATES]
+    )
+    return list(dict.fromkeys(rows))[:limit * 3]
+
+
+def by_image(image_bytes, note="", limit=8):
+    """Products that look like the photo: nearest product photos first, fused with a text search on
+    the vision model's caption plus the shopper's note. Each model can fail on its own."""
+    qs = _sellable()
+    try:
+        prepared = prepare_image(image_bytes)
+    except (OSError, ValueError) as exc:
+        logger.warning("Unreadable search photo: %s", exc)
+        prepared = None
+
+    image_ids, used_image_search = [], False
+    if prepared is not None:
+        try:
+            image_ids = _image_ids(qs, prepared, limit)
+            used_image_search = True
+        except clients.ModelUnavailable as exc:
+            logger.warning("Image search skipped: %s", exc)
+
+    caption = ""
+    if prepared is not None:
+        try:
+            caption = clients.caption_image(prepared)
+        except clients.ModelUnavailable as exc:
+            logger.warning("Photo caption skipped: %s", exc)
+    text = " ".join(part for part in (caption, (note or "").strip()) if part)
+    text_ids = [p.pk for p in hybrid_products(text, limit=limit)] if text else []
+
+    ids = rrf(image_ids, text_ids)[:limit]
+    products = Product.objects.select_related("category").prefetch_related("images").in_bulk(ids)
+    return ImageSearchResult([products[pk] for pk in ids if pk in products], used_image_search, caption)

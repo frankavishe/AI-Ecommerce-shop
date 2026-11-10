@@ -1,0 +1,10 @@
+# CPU-only torch wheels (the GPU box can drop this line to get CUDA wheels).
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.6.0
+transformers==4.51.3
+sentencepiece==0.2.0
+protobuf==5.29.4
+fastapi==0.115.12
+uvicorn[standard]==0.34.2
+pillow==11.2.1
+python-multipart==0.0.20

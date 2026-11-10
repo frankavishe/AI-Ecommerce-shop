@@ -56,7 +56,7 @@ def _history(conversation, exclude_id):
 
 def _user_content(text, has_image):
     if has_image:
-        return f"{text}\n[The shopper attached a photo to this message]".strip()
+        return f"{text}\n[The shopper attached a photo to this message. Use search_by_image to find similar products.]".strip()
     return text
 
 

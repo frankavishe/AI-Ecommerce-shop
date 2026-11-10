@@ -1,4 +1,4 @@
-"""Builds the search indexes: products (research R5) and knowledge documents (R6)."""
+"""Builds the search indexes: products (research R5), knowledge documents (R6) and product photos (R4)."""
 
 import hashlib
 import io
@@ -10,10 +10,11 @@ from django.db import transaction
 from django.db.models import TextField, Value
 from django.utils import timezone
 
-from apps.catalog.models import Product
+from apps.catalog.models import Product, ProductImage
 
 from . import clients
-from .models import IndexStatus, KnowledgeChunk, KnowledgeDocument, ProductIndex
+from .images import prepare_image
+from .models import IndexStatus, KnowledgeChunk, KnowledgeDocument, ProductImageIndex, ProductIndex
 
 logger = logging.getLogger(__name__)
 
@@ -224,3 +225,32 @@ def index_document(document_id):
         document.indexed_at = timezone.now()
         document.save(update_fields=["status", "error", "chunk_count", "indexed_at"])
     return document
+
+
+# --- Product images -----------------------------------------------------------------------------
+
+
+def index_product_image(image_id):
+    """Embed one product photo with the image model. Never raises: failures are recorded."""
+    image = ProductImage.objects.filter(pk=image_id).first()
+    if image is None:
+        ProductImageIndex.objects.filter(image_id=image_id).delete()
+        return None
+    entry, _ = ProductImageIndex.objects.get_or_create(image=image, defaults={"product_id": image.product_id})
+    entry.product_id = image.product_id
+    try:
+        with image.image.open("rb") as handle:
+            data = prepare_image(handle.read())
+        entry.image_vec = clients.embed_image(data)
+    except (clients.ModelUnavailable, OSError, ValueError) as exc:
+        logger.warning("Indexing product image %s failed: %s", image_id, exc)
+        entry.status = IndexStatus.FAILED
+        entry.error = str(exc)[:1000]
+        entry.retryable = isinstance(exc, clients.ModelUnavailable)
+        entry.save(update_fields=["product", "status", "error"])
+        return entry
+    entry.status = IndexStatus.READY
+    entry.error = ""
+    entry.indexed_at = timezone.now()
+    entry.save(update_fields=["product", "image_vec", "status", "error", "indexed_at"])
+    return entry

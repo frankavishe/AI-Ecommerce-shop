@@ -4,7 +4,7 @@ from django.db import transaction
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
-from apps.catalog.models import Category, Product
+from apps.catalog.models import Category, Product, ProductImage
 
 
 def _queue(product_ids):
@@ -29,3 +29,12 @@ def category_saved(sender, instance, created=False, raw=False, **kwargs):
         ids.update(Product.objects.filter(category_id__in=frontier).values_list("pk", flat=True))
         frontier = list(Category.objects.filter(parent_id__in=frontier).values_list("pk", flat=True))
     _queue(sorted(ids))
+
+
+@receiver(post_save, sender=ProductImage, dispatch_uid="ai_index_product_image")
+def product_image_saved(sender, instance, raw=False, **kwargs):
+    if raw:
+        return
+    from .tasks import index_product_image
+
+    transaction.on_commit(lambda pk=instance.pk: index_product_image.delay(pk))
