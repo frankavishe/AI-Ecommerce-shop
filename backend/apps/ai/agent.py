@@ -31,27 +31,35 @@ class AgentReply:
     error: str
 
 
+# Small models copy bookkeeping notes from history into their replies instead of calling the tool.
+_NOTE = re.compile(r"\[(?:Tools used|Products shown)\b[^\]]*\]\s*", re.I)
+
+
 def clean_reply(text):
-    return _THINK.sub("", text or "").strip()
+    return _NOTE.sub("", _THINK.sub("", text or "")).strip()
 
 
 def _history(conversation, exclude_id):
+    """The recent turns as chat messages, plus a note of the tools used and products shown in them.
+
+    The note goes into the system prompt rather than the assistant turns: when it sat inside them,
+    the model wrote "[Tools used: checkout.]" as text instead of calling checkout.
+    """
     rows = list(
         conversation.messages.filter(role__in=[ChatMessage.Role.USER, ChatMessage.Role.ASSISTANT])
         .exclude(pk=exclude_id).order_by("-created_at", "-id")[: settings.AI_HISTORY_MESSAGES]
     )
-    history = []
+    history, notes = [], []
     for row in reversed(rows):
         text = row.text or ""
         if row.role == ChatMessage.Role.USER and (row.image or row.image_deleted):
-            text = f"{text}\n[The shopper sent a photo]".strip()
+            text = f"{text}\n(The shopper sent a photo.)".strip()
         if row.role == ChatMessage.Role.ASSISTANT and row.tool_calls:
             used = ", ".join(dict.fromkeys(call["name"] for call in row.tool_calls))
             shown = ", ".join(f"{p['name']} (id {p['id']})" for p in row.payload.get("products", [])[:8])
-            note = f"[Tools used: {used}." + (f" Products shown: {shown}." if shown else "") + "]"
-            text = f"{note}\n{text}"
+            notes.append(f"- Your reply {len(notes) + 1}: tools used: {used}." + (f" Products shown: {shown}." if shown else ""))
         history.append({"role": row.role, "content": text})
-    return history
+    return history, "\n".join(notes)
 
 
 def _user_content(text, has_image):
@@ -99,9 +107,10 @@ def handle_message(conversation: Conversation, text="", image=None, user=None, l
     ctx = ToolContext(conversation=conversation, user=user if authenticated else None,
                       role=CUSTOMER if authenticated else GUEST, image_bytes=image_bytes)
     tools = [tool.spec() for tool in tools_for(ctx.role)]
+    history, notes = _history(conversation, incoming.pk)
     messages = [
-        {"role": "system", "content": prompts.system_prompt(lang, settings.AI_CHAT_NO_THINK)},
-        *_history(conversation, incoming.pk),
+        {"role": "system", "content": prompts.system_prompt(lang, settings.AI_CHAT_NO_THINK, notes)},
+        *history,
         {"role": "user", "content": _user_content(text, image_bytes is not None)},
     ]
 

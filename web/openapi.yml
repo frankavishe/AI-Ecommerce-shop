@@ -267,6 +267,273 @@ paths:
               schema:
                 $ref: '#/components/schemas/AdminOrder'
           description: ''
+  /api/ai/admin/conversations/:
+    get:
+      operationId: api_ai_admin_conversations_list
+      description: Assistant conversations, e.g. the ones handed to staff (state=needs_human).
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: state
+        schema:
+          type: string
+          enum:
+          - active
+          - needs_human
+        description: Only conversations in this state.
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAdminConversationList'
+          description: ''
+  /api/ai/admin/conversations/{id}/:
+    get:
+      operationId: api_ai_admin_conversations_retrieve
+      description: Assistant conversations, e.g. the ones handed to staff (state=needs_human).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this conversation.
+        required: true
+      - in: query
+        name: state
+        schema:
+          type: string
+          enum:
+          - active
+          - needs_human
+        description: Only conversations in this state.
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminConversationDetail'
+          description: ''
+  /api/ai/admin/conversations/{id}/release/:
+    post:
+      operationId: api_ai_admin_conversations_release_create
+      description: Assistant conversations, e.g. the ones handed to staff (state=needs_human).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this conversation.
+        required: true
+      - in: query
+        name: state
+        schema:
+          type: string
+          enum:
+          - active
+          - needs_human
+        description: Only conversations in this state.
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminConversation'
+          description: ''
+  /api/ai/admin/index-status/:
+    get:
+      operationId: api_ai_admin_index_status_retrieve
+      description: How much of the catalog and knowledge base is searchable, and what
+        failed.
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IndexStatus'
+          description: ''
+  /api/ai/admin/knowledge/:
+    get:
+      operationId: api_ai_admin_knowledge_list
+      description: Shop policy and help documents the assistant answers from.
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedKnowledgeDocumentList'
+          description: ''
+    post:
+      operationId: api_ai_admin_knowledge_create
+      description: Shop policy and help documents the assistant answers from.
+      tags:
+      - api
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/KnowledgeDocumentRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/KnowledgeDocumentRequest'
+          application/json:
+            schema:
+              $ref: '#/components/schemas/KnowledgeDocumentRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KnowledgeDocument'
+          description: ''
+  /api/ai/admin/knowledge/{id}/:
+    get:
+      operationId: api_ai_admin_knowledge_retrieve
+      description: Shop policy and help documents the assistant answers from.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this knowledge document.
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KnowledgeDocument'
+          description: ''
+    delete:
+      operationId: api_ai_admin_knowledge_destroy
+      description: Shop policy and help documents the assistant answers from.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this knowledge document.
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/ai/admin/knowledge/{id}/reindex/:
+    post:
+      operationId: api_ai_admin_knowledge_reindex_create
+      description: Shop policy and help documents the assistant answers from.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this knowledge document.
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KnowledgeDocument'
+          description: ''
+  /api/ai/admin/reindex/:
+    post:
+      operationId: api_ai_admin_reindex_create
+      description: Queue a rebuild of the product and/or knowledge indexes.
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReindexRequestRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ReindexRequestRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ReindexRequestRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReindexRequest'
+          description: ''
   /api/ai/chat/:
     post:
       operationId: api_ai_chat_create
@@ -356,7 +623,8 @@ paths:
       - in: path
         name: id
         schema:
-          type: string
+          type: integer
+        description: A unique integer value identifying this address.
         required: true
       tags:
       - api
@@ -375,7 +643,8 @@ paths:
       - in: path
         name: id
         schema:
-          type: string
+          type: integer
+        description: A unique integer value identifying this address.
         required: true
       tags:
       - api
@@ -406,7 +675,8 @@ paths:
       - in: path
         name: id
         schema:
-          type: string
+          type: integer
+        description: A unique integer value identifying this address.
         required: true
       tags:
       - api
@@ -436,7 +706,8 @@ paths:
       - in: path
         name: id
         schema:
-          type: string
+          type: integer
+        description: A unique integer value identifying this address.
         required: true
       tags:
       - api
@@ -1817,6 +2088,88 @@ components:
       required:
       - region
       - street
+    AdminConversation:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        channel:
+          $ref: '#/components/schemas/ChannelEnum'
+        state:
+          $ref: '#/components/schemas/ConversationStateEnum'
+        language:
+          $ref: '#/components/schemas/LanguageEnum'
+        handoff_reason:
+          type: string
+        user:
+          type: string
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        last_message:
+          type: string
+          readOnly: true
+          nullable: true
+      required:
+      - created_at
+      - id
+      - last_message
+      - updated_at
+      - user
+    AdminConversationDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        channel:
+          $ref: '#/components/schemas/ChannelEnum'
+        state:
+          $ref: '#/components/schemas/ConversationStateEnum'
+        language:
+          $ref: '#/components/schemas/LanguageEnum'
+        handoff_reason:
+          type: string
+        user:
+          type: string
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        last_message:
+          type: string
+          readOnly: true
+          nullable: true
+        messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminMessage'
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - last_message
+      - messages
+      - updated_at
+      - user
     AdminDeliveryRegion:
       type: object
       properties:
@@ -1852,6 +2205,56 @@ components:
       required:
       - fee
       - name
+    AdminMessage:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        role:
+          $ref: '#/components/schemas/AdminMessageRoleEnum'
+        text:
+          type: string
+        image:
+          type: string
+          format: uri
+          nullable: true
+        image_deleted:
+          type: boolean
+        language:
+          $ref: '#/components/schemas/LanguageEnum'
+        tool_calls: {}
+        payload: {}
+        steps:
+          type: integer
+          maximum: 32767
+          minimum: 0
+        latency_ms:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          nullable: true
+        error:
+          type: string
+          maxLength: 32
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - role
+    AdminMessageRoleEnum:
+      enum:
+      - user
+      - assistant
+      - system_note
+      type: string
+      description: |-
+        * `user` - User
+        * `assistant` - Assistant
+        * `system_note` - System note
     AdminOrder:
       type: object
       properties:
@@ -2195,6 +2598,14 @@ components:
           type: boolean
       required:
       - name
+    ChannelEnum:
+      enum:
+      - api
+      - whatsapp
+      type: string
+      description: |-
+        * `api` - API
+        * `whatsapp` - WhatsApp
     ChatOrder:
       type: object
       properties:
@@ -2289,7 +2700,7 @@ components:
         language:
           $ref: '#/components/schemas/LanguageEnum'
         state:
-          $ref: '#/components/schemas/StateEnum'
+          $ref: '#/components/schemas/ConversationStateEnum'
         reply:
           type: string
         products:
@@ -2367,6 +2778,14 @@ components:
         notes:
           type: string
           default: ''
+    ConversationStateEnum:
+      enum:
+      - active
+      - needs_human
+      type: string
+      description: |-
+        * `active` - Active
+        * `needs_human` - Needs a human
     DeliveryRegion:
       type: object
       properties:
@@ -2394,14 +2813,142 @@ components:
       required:
       - default_fee
       - regions
+    DocumentLanguageEnum:
+      enum:
+      - sw
+      - en
+      - mixed
+      type: string
+      description: |-
+        * `sw` - Swahili
+        * `en` - English
+        * `mixed` - Mixed
+    IndexCounts:
+      type: object
+      properties:
+        ready:
+          type: integer
+        pending:
+          type: integer
+        failed:
+          type: integer
+      required:
+      - failed
+      - pending
+      - ready
+    IndexFailure:
+      type: object
+      properties:
+        kind:
+          $ref: '#/components/schemas/KindEnum'
+        id:
+          type: integer
+        name:
+          type: string
+        error:
+          type: string
+      required:
+      - error
+      - id
+      - kind
+      - name
+    IndexStatus:
+      type: object
+      properties:
+        products:
+          $ref: '#/components/schemas/IndexCounts'
+        images:
+          $ref: '#/components/schemas/IndexCounts'
+        knowledge:
+          $ref: '#/components/schemas/IndexCounts'
+        failures:
+          type: array
+          items:
+            $ref: '#/components/schemas/IndexFailure'
+      required:
+      - failures
+      - images
+      - knowledge
+      - products
+    KindEnum:
+      enum:
+      - product
+      - image
+      - knowledge
+      type: string
+      description: |-
+        * `product` - product
+        * `image` - image
+        * `knowledge` - knowledge
+    KnowledgeDocument:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+          maxLength: 200
+        language:
+          $ref: '#/components/schemas/DocumentLanguageEnum'
+        status:
+          allOf:
+          - $ref: '#/components/schemas/KnowledgeDocumentStatusEnum'
+          readOnly: true
+        error:
+          type: string
+          readOnly: true
+        chunk_count:
+          type: integer
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        indexed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+      required:
+      - chunk_count
+      - created_at
+      - error
+      - id
+      - indexed_at
+      - status
+    KnowledgeDocumentRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          maxLength: 200
+        language:
+          $ref: '#/components/schemas/DocumentLanguageEnum'
+        file:
+          type: string
+          format: binary
+          writeOnly: true
+      required:
+      - file
+    KnowledgeDocumentStatusEnum:
+      enum:
+      - processing
+      - ready
+      - failed
+      type: string
+      description: |-
+        * `processing` - Processing
+        * `ready` - Ready
+        * `failed` - Failed
     LanguageEnum:
       enum:
       - sw
       - en
       type: string
       description: |-
-        * `sw` - sw
-        * `en` - en
+        * `sw` - Swahili
+        * `en` - English
     MergeCartRequest:
       type: object
       properties:
@@ -2647,6 +3194,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Address'
+    PaginatedAdminConversationList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminConversation'
     PaginatedAdminDeliveryRegionList:
       type: object
       required:
@@ -2716,6 +3286,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Category'
+    PaginatedKnowledgeDocumentList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/KnowledgeDocument'
     PaginatedOrderSummaryList:
       type: object
       required:
@@ -2983,7 +3576,7 @@ components:
           pattern: ^\+[1-9]\d{7,14}$
           maxLength: 16
         preferred_language:
-          $ref: '#/components/schemas/PreferredLanguageEnum'
+          $ref: '#/components/schemas/LanguageEnum'
     PayOrderRequest:
       type: object
       description: |-
@@ -3049,14 +3642,6 @@ components:
         * `success` - Success
         * `failed` - Failed
         * `mismatch` - Amount mismatch
-    PreferredLanguageEnum:
-      enum:
-      - sw
-      - en
-      type: string
-      description: |-
-        * `sw` - Swahili
-        * `en` - English
     ProductImage:
       type: object
       properties:
@@ -3231,7 +3816,7 @@ components:
           pattern: ^\+[1-9]\d{7,14}$
           maxLength: 16
         preferred_language:
-          $ref: '#/components/schemas/PreferredLanguageEnum'
+          $ref: '#/components/schemas/LanguageEnum'
       required:
       - username
     RegisterRequest:
@@ -3265,10 +3850,34 @@ components:
           writeOnly: true
           minLength: 8
         preferred_language:
-          $ref: '#/components/schemas/PreferredLanguageEnum'
+          $ref: '#/components/schemas/LanguageEnum'
       required:
       - password
       - username
+    ReindexRequest:
+      type: object
+      properties:
+        products:
+          type: boolean
+          default: true
+        knowledge:
+          type: boolean
+          default: true
+        force:
+          type: boolean
+          default: false
+    ReindexRequestRequest:
+      type: object
+      properties:
+        products:
+          type: boolean
+          default: true
+        knowledge:
+          type: boolean
+          default: true
+        force:
+          type: boolean
+          default: false
     Rider:
       type: object
       description: 'Admin-facing: create and manage riders (user + profile in one
@@ -3351,16 +3960,6 @@ components:
       - first_name
       - phone
       - username
-    RoleEnum:
-      enum:
-      - customer
-      - admin
-      - rider
-      type: string
-      description: |-
-        * `customer` - Customer
-        * `admin` - Admin
-        * `rider` - Rider
     ShopTokenObtainPairRequest:
       type: object
       properties:
@@ -3387,14 +3986,6 @@ components:
         * `admin` - Admin
         * `system` - System
         * `provider` - Payment provider
-    StateEnum:
-      enum:
-      - active
-      - needs_human
-      type: string
-      description: |-
-        * `active` - active
-        * `needs_human` - needs_human
     StatusChangeRequest:
       type: object
       properties:
@@ -3455,13 +4046,13 @@ components:
           maxLength: 16
         role:
           allOf:
-          - $ref: '#/components/schemas/RoleEnum'
+          - $ref: '#/components/schemas/UserRoleEnum'
           readOnly: true
         whatsapp_verified:
           type: boolean
           readOnly: true
         preferred_language:
-          $ref: '#/components/schemas/PreferredLanguageEnum'
+          $ref: '#/components/schemas/LanguageEnum'
       required:
       - id
       - role
@@ -3494,9 +4085,19 @@ components:
           pattern: ^\+[1-9]\d{7,14}$
           maxLength: 16
         preferred_language:
-          $ref: '#/components/schemas/PreferredLanguageEnum'
+          $ref: '#/components/schemas/LanguageEnum'
       required:
       - username
+    UserRoleEnum:
+      enum:
+      - customer
+      - admin
+      - rider
+      type: string
+      description: |-
+        * `customer` - Customer
+        * `admin` - Admin
+        * `rider` - Rider
     VehicleEnum:
       enum:
       - motorbike

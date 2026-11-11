@@ -171,10 +171,17 @@ def test_history_is_sent_on_the_next_turn(shoe_catalog, conversation, chat_model
     agent.handle_message(conversation, "nionyeshe cha pili")
     messages = chat_model.last_messages
     assert messages[1] == {"role": "user", "content": "nataka viatu"}
-    assert messages[2]["role"] == "assistant"
-    assert "Nina Red Sneakers na Blue Sandals." in messages[2]["content"]
-    note = messages[2]["content"]  # ids let the model follow up on "the second one"
-    assert "Products shown:" in note
+    # assistant turns carry only their text, so the model has no bookkeeping note to imitate
+    assert messages[2] == {"role": "assistant", "content": "Nina Red Sneakers na Blue Sandals."}
+    note = messages[0]["content"]  # ids let the model follow up on "the second one"
+    assert '<data source="chat_history">' in note
+    assert "tools used: search_products. Products shown:" in note
     assert f"Red Sneakers (id {shoe_catalog.red.pk})" in note
     assert f"Blue Sandals (id {shoe_catalog.blue.pk})" in note
     assert messages[-1] == {"role": "user", "content": "nionyeshe cha pili"}
+
+
+def test_reply_drops_copied_history_notes(conversation, chat_model):
+    chat_model.add("[Tools used: checkout.] Oda yako iko tayari.")
+    reply = agent.handle_message(conversation, "ndiyo")
+    assert reply.text == "Oda yako iko tayari."

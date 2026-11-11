@@ -477,18 +477,21 @@ def checkout(ctx, confirm, method=Payment.Method.MOBILE_MONEY, network=None):
         return {"ok": False, "error": problem.message}
 
     now = timezone.now()
-    if not confirm:
+    unseen = conversation.pending_checkout_at is None or conversation.pending_checkout_at < now - CONFIRM_WINDOW
+    if not confirm or unseen:
+        # A confirm with no recent summary gets the summary instead, so the model always has the real
+        # totals to show (small models skip confirm=false and then invent a summary after a bare refusal).
         conversation.pending_checkout_at = now
         conversation.save(update_fields=["pending_checkout_at", "updated_at"])
-        return {
+        result = {
             **summary, "delivery_fee_tzs": money(fee), "total_tzs": money(total),
             "currency": settings.SHOP_CURRENCY, "payment_method": method,
             "contact": {"name": contact["name"], "phone": contact["phone"]}, "deliver_to": address,
             "next": "Show this summary and ask the shopper to confirm. Then call checkout with confirm=true.",
         }
-    if conversation.pending_checkout_at is None or conversation.pending_checkout_at < now - CONFIRM_WINDOW:
-        return {"ok": False, "error": "Show the order summary first (checkout with confirm=false) and "
-                                      "get the shopper's yes."}
+        if confirm:
+            result = {"ok": False, "error": "Not placed yet: the shopper has not seen this summary.", **result}
+        return result
     order = services.place_order(cart, contact, address, user=ctx.user)
     conversation.last_order = order
     conversation.pending_checkout_at = None

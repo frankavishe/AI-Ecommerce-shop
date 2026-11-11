@@ -87,6 +87,144 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/ai/admin/conversations/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Assistant conversations, e.g. the ones handed to staff (state=needs_human). */
+        get: operations["api_ai_admin_conversations_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ai/admin/conversations/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Assistant conversations, e.g. the ones handed to staff (state=needs_human). */
+        get: operations["api_ai_admin_conversations_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ai/admin/conversations/{id}/release/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Assistant conversations, e.g. the ones handed to staff (state=needs_human). */
+        post: operations["api_ai_admin_conversations_release_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ai/admin/index-status/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description How much of the catalog and knowledge base is searchable, and what failed. */
+        get: operations["api_ai_admin_index_status_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ai/admin/knowledge/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Shop policy and help documents the assistant answers from. */
+        get: operations["api_ai_admin_knowledge_list"];
+        put?: never;
+        /** @description Shop policy and help documents the assistant answers from. */
+        post: operations["api_ai_admin_knowledge_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ai/admin/knowledge/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Shop policy and help documents the assistant answers from. */
+        get: operations["api_ai_admin_knowledge_retrieve"];
+        put?: never;
+        post?: never;
+        /** @description Shop policy and help documents the assistant answers from. */
+        delete: operations["api_ai_admin_knowledge_destroy"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ai/admin/knowledge/{id}/reindex/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Shop policy and help documents the assistant answers from. */
+        post: operations["api_ai_admin_knowledge_reindex_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ai/admin/reindex/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Queue a rebuild of the product and/or knowledge indexes. */
+        post: operations["api_ai_admin_reindex_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/ai/chat/": {
         parameters: {
             query?: never;
@@ -609,6 +747,37 @@ export interface components {
             longitude?: string | null;
             is_default?: boolean;
         };
+        AdminConversation: {
+            /** Format: uuid */
+            readonly id: string;
+            channel?: components["schemas"]["ChannelEnum"];
+            state?: components["schemas"]["ConversationStateEnum"];
+            language?: components["schemas"]["LanguageEnum"];
+            handoff_reason?: string;
+            /** @description Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only. */
+            readonly user: string;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly updated_at: string;
+            readonly last_message: string | null;
+        };
+        AdminConversationDetail: {
+            /** Format: uuid */
+            readonly id: string;
+            channel?: components["schemas"]["ChannelEnum"];
+            state?: components["schemas"]["ConversationStateEnum"];
+            language?: components["schemas"]["LanguageEnum"];
+            handoff_reason?: string;
+            /** @description Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only. */
+            readonly user: string;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly updated_at: string;
+            readonly last_message: string | null;
+            readonly messages: components["schemas"]["AdminMessage"][];
+        };
         AdminDeliveryRegion: {
             readonly id: number;
             name: string;
@@ -622,6 +791,29 @@ export interface components {
             fee: string;
             is_active?: boolean;
         };
+        AdminMessage: {
+            readonly id: number;
+            role: components["schemas"]["AdminMessageRoleEnum"];
+            text?: string;
+            /** Format: uri */
+            image?: string | null;
+            image_deleted?: boolean;
+            language?: components["schemas"]["LanguageEnum"];
+            tool_calls?: unknown;
+            payload?: unknown;
+            steps?: number;
+            latency_ms?: number | null;
+            error?: string;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        /**
+         * @description * `user` - User
+         *     * `assistant` - Assistant
+         *     * `system_note` - System note
+         * @enum {string}
+         */
+        AdminMessageRoleEnum: "user" | "assistant" | "system_note";
         AdminOrder: {
             readonly number: string;
             readonly status: components["schemas"]["OrderStatusEnum"];
@@ -746,6 +938,12 @@ export interface components {
             parent?: number | null;
             is_active?: boolean;
         };
+        /**
+         * @description * `api` - API
+         *     * `whatsapp` - WhatsApp
+         * @enum {string}
+         */
+        ChannelEnum: "api" | "whatsapp";
         ChatOrder: {
             number: string;
             status: string;
@@ -782,7 +980,7 @@ export interface components {
             conversation_token: string;
             cart_token: string | null;
             language: components["schemas"]["LanguageEnum"];
-            state: components["schemas"]["StateEnum"];
+            state: components["schemas"]["ConversationStateEnum"];
             reply: string;
             products: components["schemas"]["ChatProduct"][];
             cart: components["schemas"]["Cart"] | null;
@@ -819,6 +1017,12 @@ export interface components {
             /** @default  */
             notes: string;
         };
+        /**
+         * @description * `active` - Active
+         *     * `needs_human` - Needs a human
+         * @enum {string}
+         */
+        ConversationStateEnum: "active" | "needs_human";
         DeliveryRegion: {
             name: string;
             /** Format: decimal */
@@ -830,8 +1034,64 @@ export interface components {
             default_fee: string;
         };
         /**
-         * @description * `sw` - sw
-         *     * `en` - en
+         * @description * `sw` - Swahili
+         *     * `en` - English
+         *     * `mixed` - Mixed
+         * @enum {string}
+         */
+        DocumentLanguageEnum: "sw" | "en" | "mixed";
+        IndexCounts: {
+            ready: number;
+            pending: number;
+            failed: number;
+        };
+        IndexFailure: {
+            kind: components["schemas"]["KindEnum"];
+            id: number;
+            name: string;
+            error: string;
+        };
+        IndexStatus: {
+            products: components["schemas"]["IndexCounts"];
+            images: components["schemas"]["IndexCounts"];
+            knowledge: components["schemas"]["IndexCounts"];
+            failures: components["schemas"]["IndexFailure"][];
+        };
+        /**
+         * @description * `product` - product
+         *     * `image` - image
+         *     * `knowledge` - knowledge
+         * @enum {string}
+         */
+        KindEnum: "product" | "image" | "knowledge";
+        KnowledgeDocument: {
+            readonly id: number;
+            title?: string;
+            language?: components["schemas"]["DocumentLanguageEnum"];
+            readonly status: components["schemas"]["KnowledgeDocumentStatusEnum"];
+            readonly error: string;
+            readonly chunk_count: number;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly indexed_at: string | null;
+        };
+        KnowledgeDocumentRequest: {
+            title?: string;
+            language?: components["schemas"]["DocumentLanguageEnum"];
+            /** Format: binary */
+            file: string;
+        };
+        /**
+         * @description * `processing` - Processing
+         *     * `ready` - Ready
+         *     * `failed` - Failed
+         * @enum {string}
+         */
+        KnowledgeDocumentStatusEnum: "processing" | "ready" | "failed";
+        /**
+         * @description * `sw` - Swahili
+         *     * `en` - English
          * @enum {string}
          */
         LanguageEnum: "sw" | "en";
@@ -935,6 +1195,21 @@ export interface components {
             previous?: string | null;
             results: components["schemas"]["Address"][];
         };
+        PaginatedAdminConversationList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["AdminConversation"][];
+        };
         PaginatedAdminDeliveryRegionList: {
             /** @example 123 */
             count: number;
@@ -979,6 +1254,21 @@ export interface components {
              */
             previous?: string | null;
             results: components["schemas"]["Category"][];
+        };
+        PaginatedKnowledgeDocumentList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["KnowledgeDocument"][];
         };
         PaginatedOrderSummaryList: {
             /** @example 123 */
@@ -1119,7 +1409,7 @@ export interface components {
             first_name?: string;
             last_name?: string;
             phone?: string | null;
-            preferred_language?: components["schemas"]["PreferredLanguageEnum"];
+            preferred_language?: components["schemas"]["LanguageEnum"];
         };
         /**
          * @description How the customer wants to pay. Mobile money pushes a PIN prompt to the order's phone;
@@ -1162,12 +1452,6 @@ export interface components {
          * @enum {string}
          */
         PaymentStatusEnum: "pending" | "success" | "failed" | "mismatch";
-        /**
-         * @description * `sw` - Swahili
-         *     * `en` - English
-         * @enum {string}
-         */
-        PreferredLanguageEnum: "sw" | "en";
         ProductImage: {
             readonly id: number;
             /** Format: uri */
@@ -1242,7 +1526,7 @@ export interface components {
             first_name?: string;
             last_name?: string;
             phone?: string | null;
-            preferred_language?: components["schemas"]["PreferredLanguageEnum"];
+            preferred_language?: components["schemas"]["LanguageEnum"];
         };
         RegisterRequest: {
             /** @description Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only. */
@@ -1256,7 +1540,23 @@ export interface components {
             last_name?: string;
             phone?: string | null;
             password: string;
-            preferred_language?: components["schemas"]["PreferredLanguageEnum"];
+            preferred_language?: components["schemas"]["LanguageEnum"];
+        };
+        ReindexRequest: {
+            /** @default true */
+            products: boolean;
+            /** @default true */
+            knowledge: boolean;
+            /** @default false */
+            force: boolean;
+        };
+        ReindexRequestRequest: {
+            /** @default true */
+            products: boolean;
+            /** @default true */
+            knowledge: boolean;
+            /** @default false */
+            force: boolean;
         };
         /** @description Admin-facing: create and manage riders (user + profile in one payload). */
         Rider: {
@@ -1291,13 +1591,6 @@ export interface components {
             zone?: string;
             is_available?: boolean;
         };
-        /**
-         * @description * `customer` - Customer
-         *     * `admin` - Admin
-         *     * `rider` - Rider
-         * @enum {string}
-         */
-        RoleEnum: "customer" | "admin" | "rider";
         ShopTokenObtainPairRequest: {
             username: string;
             password: string;
@@ -1310,12 +1603,6 @@ export interface components {
          * @enum {string}
          */
         SourceEnum: "customer" | "admin" | "system" | "provider";
-        /**
-         * @description * `active` - active
-         *     * `needs_human` - needs_human
-         * @enum {string}
-         */
-        StateEnum: "active" | "needs_human";
         StatusChangeRequest: {
             status: components["schemas"]["OrderStatusEnum"];
             /** @default  */
@@ -1340,9 +1627,9 @@ export interface components {
             first_name?: string;
             last_name?: string;
             phone?: string | null;
-            readonly role: components["schemas"]["RoleEnum"];
+            readonly role: components["schemas"]["UserRoleEnum"];
             readonly whatsapp_verified: boolean;
-            preferred_language?: components["schemas"]["PreferredLanguageEnum"];
+            preferred_language?: components["schemas"]["LanguageEnum"];
         };
         UserRequest: {
             /** @description Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only. */
@@ -1355,8 +1642,15 @@ export interface components {
             first_name?: string;
             last_name?: string;
             phone?: string | null;
-            preferred_language?: components["schemas"]["PreferredLanguageEnum"];
+            preferred_language?: components["schemas"]["LanguageEnum"];
         };
+        /**
+         * @description * `customer` - Customer
+         *     * `admin` - Admin
+         *     * `rider` - Rider
+         * @enum {string}
+         */
+        UserRoleEnum: "customer" | "admin" | "rider";
         /**
          * @description * `motorbike` - Motorbike (bodaboda)
          *     * `bicycle` - Bicycle
@@ -1606,6 +1900,244 @@ export interface operations {
             };
         };
     };
+    api_ai_admin_conversations_list: {
+        parameters: {
+            query?: {
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description A search term. */
+                search?: string;
+                /** @description Only conversations in this state. */
+                state?: "active" | "needs_human";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedAdminConversationList"];
+                };
+            };
+        };
+    };
+    api_ai_admin_conversations_retrieve: {
+        parameters: {
+            query?: {
+                /** @description Only conversations in this state. */
+                state?: "active" | "needs_human";
+            };
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this conversation. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminConversationDetail"];
+                };
+            };
+        };
+    };
+    api_ai_admin_conversations_release_create: {
+        parameters: {
+            query?: {
+                /** @description Only conversations in this state. */
+                state?: "active" | "needs_human";
+            };
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this conversation. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminConversation"];
+                };
+            };
+        };
+    };
+    api_ai_admin_index_status_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IndexStatus"];
+                };
+            };
+        };
+    };
+    api_ai_admin_knowledge_list: {
+        parameters: {
+            query?: {
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description A search term. */
+                search?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedKnowledgeDocumentList"];
+                };
+            };
+        };
+    };
+    api_ai_admin_knowledge_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["KnowledgeDocumentRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["KnowledgeDocumentRequest"];
+                "application/json": components["schemas"]["KnowledgeDocumentRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KnowledgeDocument"];
+                };
+            };
+        };
+    };
+    api_ai_admin_knowledge_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A unique integer value identifying this knowledge document. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KnowledgeDocument"];
+                };
+            };
+        };
+    };
+    api_ai_admin_knowledge_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A unique integer value identifying this knowledge document. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    api_ai_admin_knowledge_reindex_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A unique integer value identifying this knowledge document. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KnowledgeDocument"];
+                };
+            };
+        };
+    };
+    api_ai_admin_reindex_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ReindexRequestRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ReindexRequestRequest"];
+                "multipart/form-data": components["schemas"]["ReindexRequestRequest"];
+            };
+        };
+        responses: {
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReindexRequest"];
+                };
+            };
+        };
+    };
     api_ai_chat_create: {
         parameters: {
             query?: never;
@@ -1686,7 +2218,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                id: string;
+                /** @description A unique integer value identifying this address. */
+                id: number;
             };
             cookie?: never;
         };
@@ -1707,7 +2240,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                id: string;
+                /** @description A unique integer value identifying this address. */
+                id: number;
             };
             cookie?: never;
         };
@@ -1734,7 +2268,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                id: string;
+                /** @description A unique integer value identifying this address. */
+                id: number;
             };
             cookie?: never;
         };
@@ -1754,7 +2289,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                id: string;
+                /** @description A unique integer value identifying this address. */
+                id: number;
             };
             cookie?: never;
         };

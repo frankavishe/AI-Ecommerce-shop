@@ -108,6 +108,10 @@ def test_confirm_without_a_summary_is_refused(filled_cart, stakaba):
 
     assert not ok and "summary" in result["error"]
     assert not Order.objects.exists() and not stakaba.calls
+    # the refusal carries the real totals, so the model has nothing to invent, and counts as shown
+    assert result["total_tzs"] == "93000" and result["delivery_fee_tzs"] == "3000"
+    ok, _, _ = run_tool(filled_cart, "checkout", {"confirm": True})
+    assert ok and Order.objects.count() == 1
 
 
 def test_confirm_after_a_stale_summary_is_refused(filled_cart, stakaba):

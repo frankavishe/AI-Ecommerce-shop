@@ -50,7 +50,8 @@ def chat(messages, tools=None, timeout=None):
     if "chat" in _overrides:
         return _overrides["chat"].chat(messages, tools)
     timeout = timeout or settings.AI_CHAT_TIMEOUT
-    kwargs = {"model": settings.AI_CHAT_MODEL, "messages": messages, "temperature": 0.2}
+    kwargs = {"model": settings.AI_CHAT_MODEL, "messages": messages, "temperature": 0.2,
+              "max_tokens": settings.AI_CHAT_MAX_TOKENS}
     if tools:
         kwargs.update(tools=tools, tool_choice="auto")
     try:

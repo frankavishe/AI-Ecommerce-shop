@@ -134,6 +134,9 @@ SPECTACULAR_SETTINGS = {
         "PaymentStatusEnum": "apps.payments.models.Payment.Status",
         "PaymentMethodEnum": "apps.payments.models.Payment.Method",
         "MobileMoneyNetworkEnum": "apps.payments.stakaba.NETWORKS",
+        "LanguageEnum": "apps.ai.models.Language",
+        "ConversationStateEnum": "apps.ai.models.Conversation.State",
+        "DocumentLanguageEnum": "apps.ai.models.KnowledgeDocument.DocLanguage",
     },
 }
 
@@ -182,6 +185,8 @@ AI_IMAGE_EMBED_URL = env("AI_IMAGE_EMBED_URL", default="http://localhost:8090")
 AI_API_KEY = env("AI_API_KEY", default="ollama")
 AI_CHAT_TIMEOUT = env.int("AI_CHAT_TIMEOUT", default=90)  # seconds for one whole chat turn
 AI_MAX_STEPS = env.int("AI_MAX_STEPS", default=6)
+# caps each chat completion so a looping model cannot hold the server until its context fills
+AI_CHAT_MAX_TOKENS = env.int("AI_CHAT_MAX_TOKENS", default=600)
 AI_TEXT_DIM = 1024  # fixed by migration ai/0001 (bge-m3)
 AI_IMAGE_DIM = 768  # fixed by migration ai/0001 (siglip2-base)
 AI_HISTORY_MESSAGES = env.int("AI_HISTORY_MESSAGES", default=12)

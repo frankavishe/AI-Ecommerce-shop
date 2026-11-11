@@ -5,7 +5,7 @@ from rest_framework import serializers
 
 from apps.orders.serializers import CartSerializer
 
-from .models import ChatMessage, Conversation, KnowledgeDocument
+from .models import ChatMessage, Conversation, KnowledgeDocument, Language
 
 ALLOWED_IMAGE_FORMATS = {"JPEG", "PNG", "WEBP"}
 
@@ -14,7 +14,7 @@ class ChatRequestSerializer(serializers.Serializer):
     message = serializers.CharField(required=False, allow_blank=True, max_length=settings.AI_MESSAGE_MAX_CHARS)
     image = serializers.ImageField(required=False)
     conversation = serializers.CharField(required=False, allow_blank=True, max_length=64)
-    language = serializers.ChoiceField(choices=["sw", "en"], required=False)
+    language = serializers.ChoiceField(choices=Language.choices, required=False)
 
     def validate_image(self, image):
         if image.size > settings.AI_UPLOAD_MAX_BYTES:
@@ -60,8 +60,8 @@ class ChatPaymentSerializer(serializers.Serializer):
 class ChatResponseSerializer(serializers.Serializer):
     conversation_token = serializers.CharField()
     cart_token = serializers.CharField(allow_null=True)
-    language = serializers.ChoiceField(choices=["sw", "en"])
-    state = serializers.ChoiceField(choices=["active", "needs_human"])
+    language = serializers.ChoiceField(choices=Language.choices)
+    state = serializers.ChoiceField(choices=Conversation.State.choices)
     reply = serializers.CharField()
     products = ChatProductSerializer(many=True)
     cart = CartSerializer(allow_null=True)

@@ -81,6 +81,8 @@ class ProductImageViewSet(viewsets.ModelViewSet):
     parser_classes = [parsers.MultiPartParser, parsers.FormParser, parsers.JSONParser]
 
     def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):
+            return ProductImage.objects.none()
         return ProductImage.objects.filter(product__slug=self.kwargs["product_slug"])
 
     def perform_create(self, serializer):

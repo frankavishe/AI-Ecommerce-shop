@@ -13,11 +13,12 @@
 | `AI_API_KEY` | `ollama` (ignored) | shared secret | Bearer for all of the above |
 | `AI_CHAT_TIMEOUT` | `90` | `20` | seconds per request overall |
 | `AI_MAX_STEPS` | `6` | `6` | |
+| `AI_CHAT_MAX_TOKENS` | `600` | `600` | cap per completion |
 
 Inside docker-compose, the dev URLs use `host.docker.internal` instead of `localhost`.
 
 Calls used:
-- `POST {AI_CHAT_BASE_URL}/chat/completions` with `tools`, `tool_choice="auto"`, `temperature=0.2`.
+- `POST {AI_CHAT_BASE_URL}/chat/completions` with `tools`, `tool_choice="auto"`, `temperature=0.2`, `max_tokens=AI_CHAT_MAX_TOKENS`.
 - `POST {AI_VISION_BASE_URL}/chat/completions` with an `image_url` data-URI part.
 - `POST {AI_EMBED_BASE_URL}/embeddings` with `input: [..]` batched (≤ 32).
 - SigLIP service (`ai/siglip/app.py`):

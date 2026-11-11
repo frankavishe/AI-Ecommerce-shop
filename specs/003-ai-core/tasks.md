@@ -133,10 +133,10 @@ repo root. Run tests from `backend/` with
 
 ## Phase 8: Polish & Cross-Cutting
 
-- [ ] T045 Regenerate the API schema (`python manage.py spectacular --file ../web/openapi.yml --validate`) and `npm run gen:api` in `web/`; fix any schema warnings from the new views
-- [ ] T046 Run the full backend suite, `makemigrations --check --dry-run`, and the web typecheck; fix regressions (catalog signals must not break existing catalog/order tests)
-- [ ] T047 [P] Add `backend/apps/ai/tests/test_live_models.py` (marked `live_models`): `ai_check` passes, `embed_texts` returns 1024-d, and a real chat answers "nataka viatu vyekundu" with a `search_products` call on the seeded eval catalog
-- [ ] T048 Live validation per `specs/003-ai-core/quickstart.md` sections 2–5 once Ollama and SigLIP are running (needs the user to install Ollama); record the CPU hit-rates and latencies in `specs/003-ai-core/quickstart.md` under a "Results" heading
+- [X] T045 Regenerate the API schema (`python manage.py spectacular --file ../web/openapi.yml --validate`) and `npm run gen:api` in `web/`; fix any schema warnings from the new views
+- [X] T046 Run the full backend suite, `makemigrations --check --dry-run`, and the web typecheck; fix regressions (catalog signals must not break existing catalog/order tests)
+- [X] T047 [P] Add `backend/apps/ai/tests/test_live_models.py` (marked `live_models`): `ai_check` passes, `embed_texts` returns 1024-d, and a real chat answers "nataka viatu vyekundu" with a `search_products` call on the seeded eval catalog
+- [X] T048 Live validation per `specs/003-ai-core/quickstart.md` sections 2–5 once Ollama and SigLIP are running (needs the user to install Ollama); record the CPU hit-rates and latencies in `specs/003-ai-core/quickstart.md` under a "Results" heading
 
 ## Dependencies
 
