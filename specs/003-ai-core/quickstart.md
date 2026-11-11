@@ -98,7 +98,7 @@ in docker. These numbers are informative only. SC-001, SC-002 and SC-005 are jud
 | 1. "nataka viatu vyekundu chini ya 50000" | pass: Swahili reply, Red Running Sneakers first, DB prices. One unrelated item (Sugar 2kg) fills the 5th result slot. Swahili wording is clumsy. | 42–110 s |
 | 2. cart: "weka jozi 1 kwenye kikapu" | pass: `add_to_cart(product_id=2)` | 32–85 s |
 | 2. details, then summary | pass: `collect_guest_details`, then `checkout(confirm=false)` with the server total (45,000 + 100 delivery). The model stored the name as "Jina Asha". | ~100 s |
-| 2. "ndiyo" (place the order) | **fail on qwen3:4b**: the model repeats the summary as text instead of calling `checkout(confirm=true)`, so no order is placed. | ~95 s |
+| 2. "ndiyo" (place the order) | **flaky on qwen3:4b**: in the curl runs the model repeated the summary instead of calling `checkout(confirm=true)`. In the browser run (Swagger UI) it took two extra turns ("ndiyo, weka oda" → summary, then "ndiyo") and placed order TNA7VZQ6: 45,100 TZS, paid through the fake Stakaba, cart emptied. | ~95 s |
 | 3. "Can I return shoes?" | pass: `knowledge_search` and an answer that quotes the returns document | 162 s |
 | 4. photo + "hii mnayo?" | **fail on qwen3:4b**: no `search_by_image` call (tested with a synthetic red-shoe image) | 26 s |
 
