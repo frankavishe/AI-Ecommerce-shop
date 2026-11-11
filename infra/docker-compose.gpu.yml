@@ -1,0 +1,53 @@
+# GPU box (prod) model servers - a stub to fill in once the box is rented.
+#   docker compose -f infra/docker-compose.gpu.yml --env-file .env up -d
+# Then point the app box at it (config only, nothing to re-index):
+#   AI_CHAT_BASE_URL=http://gpu:8000/v1  AI_CHAT_MODEL=Qwen/Qwen3-VL-8B-Instruct  AI_CHAT_NO_THINK=False
+#   AI_VISION_MODEL=Qwen/Qwen3-VL-8B-Instruct
+#   AI_EMBED_BASE_URL=http://gpu:8080/v1  AI_EMBED_MODEL=BAAI/bge-m3
+#   AI_IMAGE_EMBED_URL=http://gpu:8090  AI_API_KEY=<the shared secret>  AI_CHAT_TIMEOUT=20
+name: ai-shop-gpu
+
+x-gpu: &gpu
+  deploy:
+    resources:
+      reservations:
+        devices:
+          - driver: nvidia
+            count: all
+            capabilities: [gpu]
+
+services:
+  vllm:
+    <<: *gpu
+    image: vllm/vllm-openai:v0.11.0
+    command: >
+      --model Qwen/Qwen3-VL-8B-Instruct
+      --enable-auto-tool-choice --tool-call-parser hermes
+      --max-model-len 16384 --gpu-memory-utilization 0.80
+      --api-key ${AI_API_KEY:?set AI_API_KEY}
+    ipc: host
+    ports:
+      - "8000:8000"
+    volumes:
+      - hf_cache:/root/.cache/huggingface
+
+  tei:
+    <<: *gpu
+    image: ghcr.io/huggingface/text-embeddings-inference:1.8
+    command: --model-id BAAI/bge-m3 --api-key ${AI_API_KEY:?set AI_API_KEY}
+    ports:
+      - "8080:80"
+    volumes:
+      - hf_cache:/data
+
+  siglip:
+    build: ../ai/siglip
+    environment:
+      SIGLIP_API_KEY: ${AI_API_KEY:?set AI_API_KEY}
+    ports:
+      - "8090:8090"
+    volumes:
+      - hf_cache:/models
+
+volumes:
+  hf_cache:

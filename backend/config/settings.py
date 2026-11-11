@@ -30,6 +30,7 @@ INSTALLED_APPS = [
     "apps.catalog",
     "apps.orders",
     "apps.payments",
+    "apps.ai",
 ]
 
 MIDDLEWARE = [
@@ -115,6 +116,7 @@ REST_FRAMEWORK = {
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 24,
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    "DEFAULT_THROTTLE_RATES": {"ai_chat": "20/min", "ai_conversation": "10/min"},
 }
 
 SIMPLE_JWT = {
@@ -132,6 +134,9 @@ SPECTACULAR_SETTINGS = {
         "PaymentStatusEnum": "apps.payments.models.Payment.Status",
         "PaymentMethodEnum": "apps.payments.models.Payment.Method",
         "MobileMoneyNetworkEnum": "apps.payments.stakaba.NETWORKS",
+        "LanguageEnum": "apps.ai.models.Language",
+        "ConversationStateEnum": "apps.ai.models.Conversation.State",
+        "DocumentLanguageEnum": "apps.ai.models.KnowledgeDocument.DocLanguage",
     },
 }
 
@@ -148,6 +153,10 @@ CELERY_BEAT_SCHEDULE = {
         "task": "apps.orders.tasks.expire_unpaid_orders",
         "schedule": timedelta(minutes=5),
     },
+    "ai-purge-old-conversations": {
+        "task": "apps.ai.tasks.purge_old_conversations",
+        "schedule": timedelta(days=1),
+    },
 }
 
 SHOP_CURRENCY = "TZS"
@@ -163,3 +172,26 @@ STAKABA_BASE_URL = env("STAKABA_BASE_URL", default="https://api.stakaba.com")
 STAKABA_WEBHOOK_TOKEN = env("STAKABA_WEBHOOK_TOKEN", default="")
 # Confirm webhooks via GET /transactions/{ref}. Off until Stakaba accepts x-api-key there.
 STAKABA_CONFIRM_VIA_API = env.bool("STAKABA_CONFIRM_VIA_API", default=False)
+
+# --- AI assistant (specs/003-ai-core/contracts/model-endpoints.md) ---
+AI_CHAT_BASE_URL = env("AI_CHAT_BASE_URL", default="http://localhost:11434/v1")
+AI_CHAT_MODEL = env("AI_CHAT_MODEL", default="qwen3:4b-instruct-2507-q4_K_M")
+AI_CHAT_NO_THINK = env.bool("AI_CHAT_NO_THINK", default=True)
+AI_VISION_BASE_URL = env("AI_VISION_BASE_URL", default="") or AI_CHAT_BASE_URL
+AI_VISION_MODEL = env("AI_VISION_MODEL", default="qwen2.5vl:3b")
+AI_EMBED_BASE_URL = env("AI_EMBED_BASE_URL", default="http://localhost:11434/v1")
+AI_EMBED_MODEL = env("AI_EMBED_MODEL", default="bge-m3")
+AI_IMAGE_EMBED_URL = env("AI_IMAGE_EMBED_URL", default="http://localhost:8090")
+AI_API_KEY = env("AI_API_KEY", default="ollama")
+AI_CHAT_TIMEOUT = env.int("AI_CHAT_TIMEOUT", default=90)  # seconds for one whole chat turn
+AI_MAX_STEPS = env.int("AI_MAX_STEPS", default=6)
+# caps each chat completion so a looping model cannot hold the server until its context fills
+AI_CHAT_MAX_TOKENS = env.int("AI_CHAT_MAX_TOKENS", default=600)
+AI_TEXT_DIM = 1024  # fixed by migration ai/0001 (bge-m3)
+AI_IMAGE_DIM = 768  # fixed by migration ai/0001 (siglip2-base)
+AI_HISTORY_MESSAGES = env.int("AI_HISTORY_MESSAGES", default=12)
+AI_MESSAGE_MAX_CHARS = 2000
+AI_UPLOAD_MAX_BYTES = 10 * 1024 * 1024
+AI_KNOWLEDGE_MIN_SCORE = env.float("AI_KNOWLEDGE_MIN_SCORE", default=0.3)
+AI_PRODUCT_MIN_SIMILARITY = env.float("AI_PRODUCT_MIN_SIMILARITY", default=0.3)
+AI_IMAGE_MIN_SIMILARITY = env.float("AI_IMAGE_MIN_SIMILARITY", default=0.2)  # photo vs product photo (SigLIP)

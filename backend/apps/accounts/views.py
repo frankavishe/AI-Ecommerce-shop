@@ -1,7 +1,7 @@
 from rest_framework import generics, permissions, viewsets
 from rest_framework_simplejwt.views import TokenObtainPairView
 
-from .models import RiderProfile
+from .models import Address, RiderProfile
 from .permissions import IsShopAdmin
 from .serializers import (
     AddressSerializer,
@@ -34,6 +34,8 @@ class AddressViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):
+            return Address.objects.none()
         return self.request.user.addresses.all()
 
     def perform_create(self, serializer):
