@@ -2008,6 +2008,122 @@ paths:
                 type: object
                 additionalProperties: {}
           description: ''
+  /api/whatsapp/link/:
+    get:
+      operationId: api_whatsapp_link_retrieve
+      description: 'The signed-in user''s WhatsApp link: show it, or unlink the number.'
+      tags:
+      - whatsapp
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LinkStatus'
+          description: ''
+    delete:
+      operationId: api_whatsapp_link_destroy
+      description: 'The signed-in user''s WhatsApp link: show it, or unlink the number.'
+      tags:
+      - whatsapp
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/whatsapp/link/code/:
+    post:
+      operationId: api_whatsapp_link_code_create
+      description: Issue a one-time code the shopper sends from WhatsApp to link that
+        number.
+      tags:
+      - whatsapp
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LinkCode'
+          description: ''
+        '429':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: ''
+        '503':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: ''
+  /api/whatsapp/webhook/:
+    get:
+      operationId: api_whatsapp_webhook_retrieve
+      description: 'Meta WhatsApp Cloud API webhook: subscription handshake and signed
+        notifications.'
+      parameters:
+      - in: query
+        name: hub.challenge
+        schema:
+          type: string
+      - in: query
+        name: hub.mode
+        schema:
+          type: string
+      - in: query
+        name: hub.verify_token
+        schema:
+          type: string
+      tags:
+      - whatsapp-webhook
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            text/plain:
+              schema:
+                type: string
+          description: ''
+        '403':
+          description: No response body
+    post:
+      operationId: api_whatsapp_webhook_create
+      description: 'Meta WhatsApp Cloud API webhook: subscription handshake and signed
+        notifications.'
+      tags:
+      - whatsapp-webhook
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: {}
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              additionalProperties: {}
+          multipart/form-data:
+            schema:
+              type: object
+              additionalProperties: {}
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '403':
+          description: No response body
 components:
   schemas:
     AddItemRequest:
@@ -2250,11 +2366,13 @@ components:
       - user
       - assistant
       - system_note
+      - staff
       type: string
       description: |-
         * `user` - User
         * `assistant` - Assistant
         * `system_note` - System note
+        * `staff` - Staff
     AdminOrder:
       type: object
       properties:
@@ -2813,6 +2931,13 @@ components:
       required:
       - default_fee
       - regions
+    Detail:
+      type: object
+      properties:
+        detail:
+          type: string
+      required:
+      - detail
     DocumentLanguageEnum:
       enum:
       - sw
@@ -2949,6 +3074,44 @@ components:
       description: |-
         * `sw` - Swahili
         * `en` - English
+    LinkCode:
+      type: object
+      properties:
+        code:
+          type: string
+          description: One-time code, e.g. LINK-7KQ4XM. Valid for 10 minutes.
+        expires_at:
+          type: string
+          format: date-time
+        wa_link:
+          type: string
+          format: uri
+          description: wa.me link that opens WhatsApp with the code typed in.
+      required:
+      - code
+      - expires_at
+      - wa_link
+    LinkStatus:
+      type: object
+      properties:
+        linked:
+          type: boolean
+        number:
+          type: string
+          nullable: true
+          description: 'The linked number, masked: +255 742 *** 331.'
+        linked_at:
+          type: string
+          format: date-time
+          nullable: true
+        business_number:
+          type: string
+          description: The shop's WhatsApp number (E.164).
+      required:
+      - business_number
+      - linked
+      - linked_at
+      - number
     MergeCartRequest:
       type: object
       properties:

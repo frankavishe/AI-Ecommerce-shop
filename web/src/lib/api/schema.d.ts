@@ -715,6 +715,59 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/whatsapp/link/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The signed-in user's WhatsApp link: show it, or unlink the number. */
+        get: operations["api_whatsapp_link_retrieve"];
+        put?: never;
+        post?: never;
+        /** @description The signed-in user's WhatsApp link: show it, or unlink the number. */
+        delete: operations["api_whatsapp_link_destroy"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/whatsapp/link/code/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Issue a one-time code the shopper sends from WhatsApp to link that number. */
+        post: operations["api_whatsapp_link_code_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/whatsapp/webhook/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Meta WhatsApp Cloud API webhook: subscription handshake and signed notifications. */
+        get: operations["api_whatsapp_webhook_retrieve"];
+        put?: never;
+        /** @description Meta WhatsApp Cloud API webhook: subscription handshake and signed notifications. */
+        post: operations["api_whatsapp_webhook_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -811,9 +864,10 @@ export interface components {
          * @description * `user` - User
          *     * `assistant` - Assistant
          *     * `system_note` - System note
+         *     * `staff` - Staff
          * @enum {string}
          */
-        AdminMessageRoleEnum: "user" | "assistant" | "system_note";
+        AdminMessageRoleEnum: "user" | "assistant" | "system_note" | "staff";
         AdminOrder: {
             readonly number: string;
             readonly status: components["schemas"]["OrderStatusEnum"];
@@ -1033,6 +1087,9 @@ export interface components {
             /** Format: decimal */
             default_fee: string;
         };
+        Detail: {
+            detail: string;
+        };
         /**
          * @description * `sw` - Swahili
          *     * `en` - English
@@ -1095,6 +1152,26 @@ export interface components {
          * @enum {string}
          */
         LanguageEnum: "sw" | "en";
+        LinkCode: {
+            /** @description One-time code, e.g. LINK-7KQ4XM. Valid for 10 minutes. */
+            code: string;
+            /** Format: date-time */
+            expires_at: string;
+            /**
+             * Format: uri
+             * @description wa.me link that opens WhatsApp with the code typed in.
+             */
+            wa_link: string;
+        };
+        LinkStatus: {
+            linked: boolean;
+            /** @description The linked number, masked: +255 742 *** 331. */
+            number: string | null;
+            /** Format: date-time */
+            linked_at: string | null;
+            /** @description The shop's WhatsApp number (E.164). */
+            business_number: string;
+        };
         MergeCartRequest: {
             cart_token: string;
         };
@@ -3384,6 +3461,148 @@ export interface operations {
                         [key: string]: unknown;
                     };
                 };
+            };
+        };
+    };
+    api_whatsapp_link_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LinkStatus"];
+                };
+            };
+        };
+    };
+    api_whatsapp_link_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    api_whatsapp_link_code_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LinkCode"];
+                };
+            };
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Detail"];
+                };
+            };
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Detail"];
+                };
+            };
+        };
+    };
+    api_whatsapp_webhook_retrieve: {
+        parameters: {
+            query?: {
+                "hub.challenge"?: string;
+                "hub.mode"?: string;
+                "hub.verify_token"?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/plain": string;
+                };
+            };
+            /** @description No response body */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    api_whatsapp_webhook_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    [key: string]: unknown;
+                };
+                "application/x-www-form-urlencoded": {
+                    [key: string]: unknown;
+                };
+                "multipart/form-data": {
+                    [key: string]: unknown;
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description No response body */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

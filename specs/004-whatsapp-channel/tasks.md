@@ -293,7 +293,7 @@ Then "oda yangu iko wapi?" returns that order without asking for the phone.
 
 ### Tests (write first, must fail)
 
-- [ ] T029 [P] [US2] Write `backend/apps/whatsapp/tests/test_checkout.py`:
+- [X] T029 [P] [US2] Write `backend/apps/whatsapp/tests/test_checkout.py`:
   - The WhatsApp number is offered as the contact phone, so only name, region and street are
     needed (US2-1).
   - A typed confirm sends the server payment text: card → `checkout_link`; mobile money → the
@@ -312,7 +312,7 @@ Then "oda yangu iko wapi?" returns that order without asking for the phone.
   - Two numbers get separate conversations and carts, and neither can reach the other's cart or
     orders (FR-010).
   - SC-004 scripted flow: from question to payment in ≤ 6 inbound messages.
-- [ ] T030 [P] [US2] Write `backend/apps/whatsapp/tests/test_linking.py`:
+- [X] T030 [P] [US2] Write `backend/apps/whatsapp/tests/test_linking.py`:
   - API: GET when not linked or linked (masked number); POST creates `LINK-XXXXXX` (alphabet
     `ABCDEFGHJKLMNPQRSTUVWXYZ23456789`, only the hash stored, older codes voided, `wa_link`
     pre-filled); throttled at 5 per hour; 503 when not configured; DELETE unlinks and clears
@@ -330,7 +330,7 @@ Then "oda yangu iko wapi?" returns that order without asking for the phone.
 
 ### Implementation
 
-- [ ] T031 [US2] Implement `backend/apps/whatsapp/checkout_buttons.py` (research R6):
+- [X] T031 [US2] Implement `backend/apps/whatsapp/checkout_buttons.py` (research R6):
   - `fingerprint(conversation, ctx_user)`: sha256 over sorted `(product_id, qty, unit_price)`,
     the normalized `prefilled` details, method, network, fee and total.
   - `send_prompt(contact, conversation, summary, batch)`: creates `WhatsAppCheckoutPrompt` and
@@ -339,13 +339,13 @@ Then "oda yangu iko wapi?" returns that order without asking for the phone.
     R6 step by step, calling `ai.tools.run_tool(ctx, "checkout", {...})`. It stores user and
     assistant `ChatMessage`s for the tap.
   - `handle_change(...)`.
-- [ ] T032 [US2] In `backend/apps/whatsapp/processing.py`:
+- [X] T032 [US2] In `backend/apps/whatsapp/processing.py`:
   - Route the `button` type to `checkout_buttons`.
   - After each turn, create a `WhatsAppOrder` if `conversation.last_order_id` changed.
   - When `reply.payload["payment"]` or `["order"]` is set, add the server payment text
     (`payment_card` / `payment_mobile`) to the batch.
   - Call `send_prompt` when `reply.summary` is set, as the last item of the batch.
-- [ ] T033 [US2] Implement `backend/apps/whatsapp/linking.py` (research R13):
+- [X] T033 [US2] Implement `backend/apps/whatsapp/linking.py` (research R13):
   - `issue_code(user)`
   - `redeem(contact, conversation, code)`, which uses `orders.services.merge_carts` and sets
     `conversation.user` and `cart=None`
@@ -355,24 +355,24 @@ Then "oda yangu iko wapi?" returns that order without asking for the phone.
   - the attempt limit through `WhatsAppLinkAttempt`
 
   Hook it into the control-word step of `processing.py`.
-- [ ] T034 [US2] Implement `LinkView` (GET, DELETE) and `LinkCodeView` (POST, `ScopedRateThrottle`
+- [X] T034 [US2] Implement `LinkView` (GET, DELETE) and `LinkCodeView` (POST, `ScopedRateThrottle`
   scope `whatsapp_link_code`) in `backend/apps/whatsapp/views.py`, with serializers in
   `backend/apps/whatsapp/serializers.py`. Route `link/` and `link/code/`. Responses follow
   `contracts/link-api.md`, and the views carry `extend_schema(tags=["whatsapp"])`.
-- [ ] T035 [US2] Regenerate the schema with
+- [X] T035 [US2] Regenerate the schema with
   `.venv/Scripts/python manage.py spectacular --file ../web/openapi.yml --validate`, then run
   `npm run gen:api` in `web/`.
-- [ ] T036 [P] [US2] Add the `account.whatsapp.*` strings to `web/src/i18n/sw.ts` and
+- [X] T036 [P] [US2] Add the `account.whatsapp.*` strings to `web/src/i18n/sw.ts` and
   `web/src/i18n/en.ts`: title, explanation, getCode, codeLabel, expiresIn, openWhatsApp,
   copyCode, copied, linkedAs, linkedOn, unlink, confirmUnlink, cancel, unlinked, notConfigured.
-- [ ] T037 [US2] Implement `web/src/lib/queries/whatsapp.ts`: `useWhatsAppLink({poll})` (polls
+- [X] T037 [US2] Implement `web/src/lib/queries/whatsapp.ts`: `useWhatsAppLink({poll})` (polls
   every 5 s while a code is shown, for up to 10 min), `useCreateLinkCode()` and `useUnlink()`,
   through `bff` from `@/lib/api/client`, the same way as the existing queries.
-- [ ] T038 [US2] Implement `web/src/app/(shop)/account/whatsapp-link-card.tsx` per
+- [X] T038 [US2] Implement `web/src/app/(shop)/account/whatsapp-link-card.tsx` per
   `contracts/link-api.md` "Web" (not linked / code shown with countdown / linked + inline unlink
   confirm, no browser dialogs). Render it under `<ProfileForm />` in
   `web/src/app/(shop)/account/page.tsx`.
-- [ ] T039 [P] [US2] Write `web/e2e/account-whatsapp.spec.ts` (Playwright, using the e2e backend):
+- [X] T039 [P] [US2] Write `web/e2e/account-whatsapp.spec.ts` (Playwright, using the e2e backend):
   log in, get a code, check that the code and `wa.me` link are shown, simulate a link (backend
   helper or API), check the card flips to linked, then unlink. Add a vitest unit test for the
   countdown formatting in `web/src/app/(shop)/account/whatsapp-link-card.test.tsx`.

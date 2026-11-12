@@ -7,13 +7,17 @@ from django.db import transaction
 from django.http import HttpResponse, JsonResponse
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
-from rest_framework.permissions import AllowAny
+from rest_framework import status
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
 from apps.orders.services import normalize_phone
 
-from . import parsing
+from . import linking, parsing
 from .models import WhatsAppContact, WhatsAppInboundMessage as Inbound, WhatsAppOutboundMessage as Out
+from .serializers import DetailSerializer, LinkCodeSerializer, LinkStatusSerializer
 from .signature import verify_signature, verify_token
 
 logger = logging.getLogger(__name__)
@@ -117,3 +121,44 @@ class WebhookView(APIView):
             return JsonResponse({"ok": True})
         ingest(parsing.parse(payload))
         return JsonResponse({"ok": True})
+
+
+# --- Account linking (contracts/link-api.md) ------------------------------------------------------
+
+
+class LinkView(APIView):
+    """The signed-in user's WhatsApp link: show it, or unlink the number."""
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(tags=["whatsapp"], responses={200: LinkStatusSerializer})
+    def get(self, request):
+        contact = WhatsAppContact.objects.filter(user=request.user).first()
+        return Response(LinkStatusSerializer({
+            "linked": contact is not None,
+            "number": linking.mask(contact.phone) if contact else None,
+            "linked_at": contact.linked_at if contact else None,
+            "business_number": settings.WHATSAPP_BUSINESS_NUMBER,
+        }).data)
+
+    @extend_schema(tags=["whatsapp"], request=None, responses={204: None})
+    def delete(self, request):
+        linking.unlink(request.user)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class LinkCodeView(APIView):
+    """Issue a one-time code the shopper sends from WhatsApp to link that number."""
+
+    permission_classes = [IsAuthenticated]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "whatsapp_link_code"
+
+    @extend_schema(tags=["whatsapp"], request=None,
+                   responses={201: LinkCodeSerializer, 429: DetailSerializer, 503: DetailSerializer})
+    def post(self, request):
+        try:
+            body = linking.issue_code(request.user)
+        except linking.NotConfigured:
+            return Response({"detail": "WhatsApp is not configured."}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+        return Response(LinkCodeSerializer(body).data, status=status.HTTP_201_CREATED)

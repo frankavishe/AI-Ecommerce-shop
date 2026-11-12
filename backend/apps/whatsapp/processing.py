@@ -280,7 +280,15 @@ TYPE_HANDLERS = {
     Inbound.Type.UNSUPPORTED: handle_unsupported,
 }
 
-# Extension points filled by later stories (control words, after-turn bookkeeping, reply extras).
+# Extension points: control words (before the assistant), after-turn bookkeeping, reply extras.
 CONTROL_HANDLERS = []
 AFTER_TURN = []
 REPLY_EXTRAS = []
+
+# Registered last: these modules import this one, so look their functions up at call time.
+from . import checkout_buttons, linking  # noqa: E402
+
+TYPE_HANDLERS[Inbound.Type.BUTTON] = lambda job: checkout_buttons.handle_button(job)
+CONTROL_HANDLERS.append(lambda job: linking.control(job))
+AFTER_TURN.append(lambda job, reply: checkout_buttons.after_turn(job, reply))
+REPLY_EXTRAS.append(lambda job, reply, batch: checkout_buttons.reply_extras(job, reply, batch))

@@ -20,6 +20,8 @@ export type AdminOrder = S["AdminOrder"];
 export type AdminOrderSummary = S["AdminOrderSummary"];
 export type AdminDeliveryRegion = S["AdminDeliveryRegion"];
 export type CheckoutRequest = S["CheckoutRequest"];
+export type WhatsAppLink = S["LinkStatus"];
+export type WhatsAppLinkCode = S["LinkCode"];
 
 /** Checkout and order-with-payment responses add these to Order (orders/views.py order_with_payment). */
 export type PlacedOrder = Order & {
