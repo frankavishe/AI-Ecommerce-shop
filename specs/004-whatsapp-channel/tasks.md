@@ -100,7 +100,7 @@ outbound.md, link-api.md, admin-api.md, speech-endpoint.md), quickstart.md
     number, or between `50,000` and `TZS`.
   - `classify_error`: the transient and permanent codes from `contracts/outbound.md`.
   - `advisory_lock`: a second acquire on another connection returns False while the first holds
-    it.
+    it (`@pytest.mark.django_db(transaction=True)` and a raw second psycopg connection).
 - [ ] T009 [P] Implement `backend/apps/whatsapp/signature.py` (`verify_signature(raw: bytes,
   header: str) -> bool` using `hmac.compare_digest`, and `verify_token(given) -> bool`) per
   research R1.
@@ -132,7 +132,19 @@ outbound.md, link-api.md, admin-api.md, speech-endpoint.md), quickstart.md
     and installs a fresh `FakeGraph`, exposed as fixture `graph`
   - `contact_factory(wa_id="255742000331", **kw)`
   - `deliver_inbound(payload)` (a signed POST plus the eager drain)
-- [ ] T015 Implement `backend/apps/whatsapp/outbound.py` (research R10, R15) so the outbound
+- [ ] T015 Write (before T016/T017; must fail first) `backend/apps/whatsapp/tests/test_outbound.py`:
+  - window closed → `WindowClosed` and no row
+  - a template sends with the window closed
+  - the batch order is kept
+  - a transient error: `deliver_batch` returns `"retry"`, the remaining rows stay queued, and
+    the patched `deliver.retry` is called with countdowns 10/60/300; after the 4th attempt the
+    remaining rows are `failed`
+  - a linked `WhatsAppOrderNotification` follows its outbound row to `sent` or `failed`
+  - 131026 → failed + skipped
+  - not configured → failed with code
+  - a cached media upload is reused, and re-uploaded after 25 days
+
+- [ ] T016 Implement `backend/apps/whatsapp/outbound.py` (research R10, R15) so the outbound
   parts of T008 pass:
   - `split_text`
   - `WindowClosed`
@@ -144,8 +156,10 @@ outbound.md, link-api.md, admin-api.md, speech-endpoint.md), quickstart.md
   - `flush(batch)`: queues `tasks.deliver(batch_id)` on commit.
   - `product_media_id(product_image)`: uploads once and caches it in `WhatsAppMediaUpload` for
     25 days.
-- [ ] T016 Implement `deliver(batch_id)` in `backend/apps/whatsapp/tasks.py` (Celery `bind=True`,
-  `max_retries=4`):
+- [ ] T017 Implement a pure `deliver_batch(batch_id) -> "done" | "retry"` in
+  `backend/apps/whatsapp/outbound.py`, and a thin Celery task `deliver(batch_id)` in
+  `backend/apps/whatsapp/tasks.py` (`bind=True`, `max_retries=4`) that calls it and, on
+  `"retry"`, raises `self.retry(countdown=[10, 60, 300][retries])`:
   - It sends the queued rows in `position` order, and sets `wa_message_id`, `status=sent`,
     `status_at` and `attempts`.
   - Transient `GraphError`: re-raise `self.retry(countdown=[10, 60, 300][retries])` for the
@@ -153,17 +167,10 @@ outbound.md, link-api.md, admin-api.md, speech-endpoint.md), quickstart.md
   - Permanent recipient errors 131026/131047: the row is `failed` and the rest `skipped`.
   - Other permanent errors: that row is `failed` and the batch continues.
   - `NotConfigured`: `failed`, `error_code="not_configured"`, logged at ERROR.
-  - In eager mode the retry is skipped, so the test asserts the row stays `queued` with
-    `attempts=1`.
-- [ ] T017 [P] Write `backend/apps/whatsapp/tests/test_outbound.py`:
-  - window closed → `WindowClosed` and no row
-  - a template sends with the window closed
-  - the batch order is kept
-  - a transient error leaves the remaining rows queued
-  - 131026 → failed + skipped
-  - not configured → failed with code
-  - a cached media upload is reused, and re-uploaded after 25 days
-
+  - Whenever a row becomes `sent`, `failed` or `skipped`, update any
+    `WhatsAppOrderNotification` with `outbound=row` to the same state (H1).
+  - In eager mode the task does not retry. Tests drive `deliver_batch` directly and patch
+    `deliver.retry` (H2).
 ### 003 hooks (research R4)
 
 - [ ] T018 Write `backend/apps/ai/tests/test_channel_hooks.py`:
@@ -223,6 +230,7 @@ to that number (`FakeGraph.sent`).
   - Model down: the fallback text is sent, the inbound row is `failed/model_unavailable`, and
     the message is saved (US1-7, SC-008).
   - A message older than 24 h on arrival is `recorded` and not answered.
+  - A turn that exceeds `AI_CHAT_TIMEOUT` sends exactly one fallback and no late reply.
   - A long reply is split in order.
   - The contact language follows the conversation.
   - `last_inbound_at` never moves backwards.
@@ -301,6 +309,8 @@ Then "oda yangu iko wapi?" returns that order without asking for the phone.
   - Change → `handle_message` with "Nataka kubadilisha kitu".
   - US2-4/5/6: the number's own orders need no number or phone; another number's order needs
     both; a registered-but-unlinked phone shows only WhatsApp orders.
+  - Two numbers get separate conversations and carts, and neither can reach the other's cart or
+    orders (FR-010).
   - SC-004 scripted flow: from question to payment in ≤ 6 inbound messages.
 - [ ] T030 [P] [US2] Write `backend/apps/whatsapp/tests/test_linking.py`:
   - API: GET when not linked or linked (masked number); POST creates `LINK-XXXXXX` (alphabet
@@ -315,6 +325,8 @@ Then "oda yangu iko wapi?" returns that order without asking for the phone.
   - A number linked to another user → `link_taken`.
   - A user's previous number is unlinked on a new link.
   - The code inside a longer sentence still matches.
+  - After an unlink (API), the next WhatsApp turn runs as a guest in a new conversation, and
+    the earlier WhatsApp orders are still visible through `phone_orders`.
 
 ### Implementation
 
@@ -337,7 +349,8 @@ Then "oda yangu iko wapi?" returns that order without asking for the phone.
   - `issue_code(user)`
   - `redeem(contact, conversation, code)`, which uses `orders.services.merge_carts` and sets
     `conversation.user` and `cart=None`
-  - `unlink(user)`
+  - `unlink(user)`: clears `contact.user`, `linked_at` and `whatsapp_verified`, and points
+    `contact.conversation` at a new guest conversation with a new guest cart
   - `CODE_RE = re.compile(r"\bLINK-([A-Z2-9]{6})\b", re.I)`
   - the attempt limit through `WhatsAppLinkAttempt`
 
@@ -497,7 +510,8 @@ nothing.
   - A web order → nothing (US5-4).
   - `updates_allowed=False` → notification `skipped`, nothing sent.
   - STOP, acha and sitaki → `stopped` reply, updates off, no model call. START/anza → back on.
-  - A transient send failure retries and keeps the order state. A final failure → notification
+  - A transient send failure returns `"retry"` from `deliver_batch` (with `deliver.retry`
+    patched) and keeps the order state. A final failure → notification
     `failed` and visible in the outbound list (US5-5).
 
 ### Implementation
@@ -513,7 +527,8 @@ nothing.
   - Updates off → `skipped`.
   - Otherwise `queue_template` with the template setting for the status and params
     `[order.number, format_tzs(order.total)]` (paid) or `[order.number]`, link the outbound row,
-    and set the notification `state` from the delivery result.
+    and leave the notification `state=sending`. `deliver_batch` (T017) moves it to `sent` or
+    `failed`.
 - [ ] T055 [US5] Add the STOP and START control words (`stop|acha|sitaki|unsubscribe`,
   `start|anza`; trimmed, case-insensitive, whole message) to the control-word step of
   `backend/apps/whatsapp/processing.py`, with the `stopped` and `started` replies.
@@ -541,9 +556,11 @@ nothing.
 - [ ] T060 Write the full validation run: `pytest -q` (003 stays green),
   `makemigrations --check --dry-run`, `spectacular --validate`, `npm run gen:api` with no diff,
   `npx vitest run`, and `npx playwright test e2e/account-whatsapp.spec.ts`. Fix any failures.
-- [ ] T061 Run quickstart §2 (simulated end-to-end) against the local CPU stack, and record the
+- [ ] T061 Add `--timing` to `whatsapp_simulate` (prints webhook→reply-queued seconds per
+  message) and run quickstart §2 (simulated end-to-end) against the local CPU stack, and record the
   observed result (reply times, button flow, voice) in `specs/004-whatsapp-channel/quickstart.md`
-  under a "Validation results" heading.
+  under a "Validation results" heading. SC-003 is checked the same way on the GPU box when it
+  exists. Until then, note it as pending.
 
 ## Dependencies
 
