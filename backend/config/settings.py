@@ -31,6 +31,7 @@ INSTALLED_APPS = [
     "apps.orders",
     "apps.payments",
     "apps.ai",
+    "apps.whatsapp",
 ]
 
 MIDDLEWARE = [
@@ -116,7 +117,8 @@ REST_FRAMEWORK = {
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 24,
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
-    "DEFAULT_THROTTLE_RATES": {"ai_chat": "20/min", "ai_conversation": "10/min"},
+    "DEFAULT_THROTTLE_RATES": {"ai_chat": "20/min", "ai_conversation": "10/min",
+                               "whatsapp_link_code": "5/hour"},
 }
 
 SIMPLE_JWT = {
@@ -195,3 +197,33 @@ AI_UPLOAD_MAX_BYTES = 10 * 1024 * 1024
 AI_KNOWLEDGE_MIN_SCORE = env.float("AI_KNOWLEDGE_MIN_SCORE", default=0.3)
 AI_PRODUCT_MIN_SIMILARITY = env.float("AI_PRODUCT_MIN_SIMILARITY", default=0.3)
 AI_IMAGE_MIN_SIMILARITY = env.float("AI_IMAGE_MIN_SIMILARITY", default=0.2)  # photo vs product photo (SigLIP)
+
+# --- Speech-to-text (004, contracts/speech-endpoint.md): OpenAI-compatible /audio/transcriptions ---
+AI_SPEECH_BASE_URL = env("AI_SPEECH_BASE_URL", default="http://localhost:8091/v1")
+AI_SPEECH_MODEL = env("AI_SPEECH_MODEL", default="small")
+AI_SPEECH_TIMEOUT = env.int("AI_SPEECH_TIMEOUT", default=120)
+
+# --- WhatsApp Cloud API (specs/004-whatsapp-channel) ---
+WHATSAPP_PHONE_NUMBER_ID = env("WHATSAPP_PHONE_NUMBER_ID", default="")
+WHATSAPP_BUSINESS_NUMBER = env("WHATSAPP_BUSINESS_NUMBER", default="")
+WHATSAPP_ACCESS_TOKEN = env("WHATSAPP_ACCESS_TOKEN", default="")
+WHATSAPP_APP_SECRET = env("WHATSAPP_APP_SECRET", default="")
+WHATSAPP_VERIFY_TOKEN = env("WHATSAPP_VERIFY_TOKEN", default="")
+WHATSAPP_GRAPH_URL = env("WHATSAPP_GRAPH_URL", default="https://graph.facebook.com")
+WHATSAPP_GRAPH_VERSION = env("WHATSAPP_GRAPH_VERSION", default="v23.0")
+WHATSAPP_TEMPLATE_ORDER_PAID = env("WHATSAPP_TEMPLATE_ORDER_PAID", default="order_paid")
+WHATSAPP_TEMPLATE_ORDER_OUT_FOR_DELIVERY = env("WHATSAPP_TEMPLATE_ORDER_OUT_FOR_DELIVERY", default="order_out_for_delivery")
+WHATSAPP_TEMPLATE_ORDER_DELIVERED = env("WHATSAPP_TEMPLATE_ORDER_DELIVERED", default="order_delivered")
+WHATSAPP_TEMPLATE_ORDER_CANCELLED = env("WHATSAPP_TEMPLATE_ORDER_CANCELLED", default="order_cancelled")
+WHATSAPP_TEMPLATE_ORDER_EXPIRED = env("WHATSAPP_TEMPLATE_ORDER_EXPIRED", default="order_expired")
+WHATSAPP_TEMPLATE_FOLLOW_UP = env("WHATSAPP_TEMPLATE_FOLLOW_UP", default="follow_up")
+WHATSAPP_RATE_PER_MINUTE = env.int("WHATSAPP_RATE_PER_MINUTE", default=10)
+WHATSAPP_RATE_PER_DAY = env.int("WHATSAPP_RATE_PER_DAY", default=200)
+WHATSAPP_RESET_DAYS = env.int("WHATSAPP_RESET_DAYS", default=7)
+WHATSAPP_VOICE_MAX_SECONDS = env.int("WHATSAPP_VOICE_MAX_SECONDS", default=120)
+WHATSAPP_VOICE_MAX_BYTES = env.int("WHATSAPP_VOICE_MAX_BYTES", default=2 * 1024 * 1024)
+WHATSAPP_TEXT_LIMIT = env.int("WHATSAPP_TEXT_LIMIT", default=4096)
+WHATSAPP_MAX_PRODUCT_PHOTOS = env.int("WHATSAPP_MAX_PRODUCT_PHOTOS", default=3)
+# DEBUG only: log outbound payloads instead of calling Meta (quickstart section 2).
+WHATSAPP_FAKE_GRAPH = env.bool("WHATSAPP_FAKE_GRAPH", default=False)
+WHATSAPP_LOCK_NAMESPACE = env.int("WHATSAPP_LOCK_NAMESPACE", default=4004)

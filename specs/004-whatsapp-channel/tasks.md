@@ -15,13 +15,13 @@ outbound.md, link-api.md, admin-api.md, speech-endpoint.md), quickstart.md
 
 ## Phase 1: Setup
 
-- [ ] T001 Create the app skeleton `backend/apps/whatsapp/`: `__init__.py`, `apps.py`
+- [X] T001 Create the app skeleton `backend/apps/whatsapp/`: `__init__.py`, `apps.py`
   (`WhatsappConfig`; `ready()` imports `notifications`), empty `models.py`, `urls.py`,
   `tests/__init__.py`, `management/__init__.py`, `management/commands/__init__.py`, and
   `eval/voice/.gitkeep`. Add `"apps.whatsapp"` to `INSTALLED_APPS` in
   `backend/config/settings.py`, and `path("api/whatsapp/", include("apps.whatsapp.urls"))` in
   `backend/config/urls.py`.
-- [ ] T002 [P] Add these settings to `backend/config/settings.py`, read from env with the given
+- [X] T002 [P] Add these settings to `backend/config/settings.py`, read from env with the given
   defaults:
   - Credentials: `WHATSAPP_PHONE_NUMBER_ID=""`, `WHATSAPP_BUSINESS_NUMBER=""`,
     `WHATSAPP_ACCESS_TOKEN=""`, `WHATSAPP_APP_SECRET=""`, `WHATSAPP_VERIFY_TOKEN=""`.
@@ -40,11 +40,11 @@ outbound.md, link-api.md, admin-api.md, speech-endpoint.md), quickstart.md
   - Speech: `AI_SPEECH_BASE_URL="http://localhost:8091/v1"`, `AI_SPEECH_MODEL="small"`,
     `AI_SPEECH_TIMEOUT=120`.
   - Throttle rate `"whatsapp_link_code": "5/hour"`.
-- [ ] T003 [P] Add the `WHATSAPP_*` and `AI_SPEECH_*` variables with comments (dev values from
+- [X] T003 [P] Add the `WHATSAPP_*` and `AI_SPEECH_*` variables with comments (dev values from
   `specs/004-whatsapp-channel/quickstart.md` §2) to `.env.example`.
-- [ ] T004 [P] In `backend/pytest.ini`, change the `sandbox` marker description to
+- [X] T004 [P] In `backend/pytest.ini`, change the `sandbox` marker description to
   `sandbox: live calls to the Stakaba sandbox / Meta WhatsApp test number (run with: pytest -m sandbox)`.
-- [ ] T005 [P] Move the `shoe_catalog`, `conversation` and `png_bytes` fixtures from
+- [X] T005 [P] Move the `shoe_catalog`, `conversation` and `png_bytes` fixtures from
   `backend/apps/ai/tests/conftest.py` to `backend/conftest.py`, so `apps/whatsapp/tests` can use
   them. Keep `embedder` in the ai conftest. `pytest apps/ai` must still pass.
 
@@ -52,7 +52,7 @@ outbound.md, link-api.md, admin-api.md, speech-endpoint.md), quickstart.md
 
 ### Models
 
-- [ ] T006 Write the models in `backend/apps/whatsapp/models.py` exactly per `data-model.md`:
+- [X] T006 Write the models in `backend/apps/whatsapp/models.py` exactly per `data-model.md`:
   - `WhatsAppContact`: `wa_id` char(20) unique; `phone` char(16) unique; `profile_name`
     char(120) blank; `user` OneToOne→User null SET_NULL; `linked_at` null; `conversation`
     FK→ai.Conversation null SET_NULL `related_name="+"`; `language` sw/en default sw;
@@ -84,14 +84,14 @@ outbound.md, link-api.md, admin-api.md, speech-endpoint.md), quickstart.md
   - `WhatsAppLinkAttempt`: `contact` CASCADE; `created_at`.
   - `WhatsAppMediaUpload`: `product_image` OneToOne PK CASCADE; `media_id` char(128);
     `uploaded_at`.
-- [ ] T007 Run `makemigrations whatsapp` to create
+- [X] T007 Run `makemigrations whatsapp` to create
   `backend/apps/whatsapp/migrations/0001_initial.py`. Add `STAFF = "staff", "Staff"` to
   `ChatMessage.Role` in `backend/apps/ai/models.py`, and run `makemigrations ai` (a choices-only
   migration).
 
 ### Building blocks (tests first)
 
-- [ ] T008 [P] Write `backend/apps/whatsapp/tests/test_building_blocks.py`, with these cases:
+- [X] T008 [P] Write `backend/apps/whatsapp/tests/test_building_blocks.py`, with these cases:
   - `verify_signature`: a correct `sha256=` header passes; a wrong digest, a missing header, a
     non-`sha256=` prefix and an empty configured secret all fail.
   - `verify_token`: constant-time match; an empty configured token always fails.
@@ -101,10 +101,10 @@ outbound.md, link-api.md, admin-api.md, speech-endpoint.md), quickstart.md
   - `classify_error`: the transient and permanent codes from `contracts/outbound.md`.
   - `advisory_lock`: a second acquire on another connection returns False while the first holds
     it (`@pytest.mark.django_db(transaction=True)` and a raw second psycopg connection).
-- [ ] T009 [P] Implement `backend/apps/whatsapp/signature.py` (`verify_signature(raw: bytes,
+- [X] T009 [P] Implement `backend/apps/whatsapp/signature.py` (`verify_signature(raw: bytes,
   header: str) -> bool` using `hmac.compare_digest`, and `verify_token(given) -> bool`) per
   research R1.
-- [ ] T010 [P] Implement `backend/apps/whatsapp/graph.py`:
+- [X] T010 [P] Implement `backend/apps/whatsapp/graph.py`:
   - `GraphError(code, title, http_status, transient: bool)`
   - `classify_error(...)` per the `contracts/outbound.md` error-class table
   - `GraphClient` with `send(body) -> wa_message_id`, `get_media(media_id) -> {url, mime_type,
@@ -113,26 +113,26 @@ outbound.md, link-api.md, admin-api.md, speech-endpoint.md), quickstart.md
   - `NotConfigured` when the token or number id is empty.
   - `get_client()` and `use_fake(fake)` / `reset_fake()`.
   - A `LoggingGraph` that is used when `WHATSAPP_FAKE_GRAPH` is set and `DEBUG` is on.
-- [ ] T011 [P] Implement `backend/apps/whatsapp/locks.py`: an `advisory_lock(contact_id)` context
+- [X] T011 [P] Implement `backend/apps/whatsapp/locks.py`: an `advisory_lock(contact_id)` context
   manager that yields `True`/`False`, using `pg_try_advisory_lock(WHATSAPP_LOCK_NAMESPACE, id)`
   and `pg_advisory_unlock` in `finally` (research R3).
-- [ ] T012 [P] Implement `backend/apps/whatsapp/texts.py` with every sw/en fixed text from
+- [X] T012 [P] Implement `backend/apps/whatsapp/texts.py` with every sw/en fixed text from
   `contracts/outbound.md` ("Server-built texts"), plus `text(key, lang, **kw)` and
   `format_tzs(Decimal)` (thousands separator, using `ai.tools.money` rounding).
-- [ ] T013 Implement `backend/apps/whatsapp/testing.py`:
+- [X] T013 Implement `backend/apps/whatsapp/testing.py`:
   - `FakeGraph`: records `sent` bodies and returns `wamid.FAKE<n>`. `fail_next(code, transient)`
     scripts errors. `media` maps id → (bytes, mime, size). `uploads` returns `media.FAKE<n>`.
   - Payload builders `text_message`, `image_message`, `audio_message`, `button_reply`,
     `unsupported_message` and `status_update`, all wrapped in the webhook envelope of
     `contracts/webhook.md`.
   - `signed_post(client, payload, secret=None)`.
-- [ ] T014 Add the fixtures to `backend/apps/whatsapp/tests/conftest.py`:
+- [X] T014 Add the fixtures to `backend/apps/whatsapp/tests/conftest.py`:
   - an autouse fixture that sets the `WHATSAPP_*` test settings (secret `test-secret`, verify
     `test-verify`, number id `test-number`, token `test-token`, business number `+255700000000`)
     and installs a fresh `FakeGraph`, exposed as fixture `graph`
   - `contact_factory(wa_id="255742000331", **kw)`
   - `deliver_inbound(payload)` (a signed POST plus the eager drain)
-- [ ] T015 Write (before T016/T017; must fail first) `backend/apps/whatsapp/tests/test_outbound.py`:
+- [X] T015 Write (before T016/T017; must fail first) `backend/apps/whatsapp/tests/test_outbound.py`:
   - window closed → `WindowClosed` and no row
   - a template sends with the window closed
   - the batch order is kept
@@ -144,7 +144,7 @@ outbound.md, link-api.md, admin-api.md, speech-endpoint.md), quickstart.md
   - not configured → failed with code
   - a cached media upload is reused, and re-uploaded after 25 days
 
-- [ ] T016 Implement `backend/apps/whatsapp/outbound.py` (research R10, R15) so the outbound
+- [X] T016 Implement `backend/apps/whatsapp/outbound.py` (research R10, R15) so the outbound
   parts of T008 pass:
   - `split_text`
   - `WindowClosed`
@@ -156,7 +156,7 @@ outbound.md, link-api.md, admin-api.md, speech-endpoint.md), quickstart.md
   - `flush(batch)`: queues `tasks.deliver(batch_id)` on commit.
   - `product_media_id(product_image)`: uploads once and caches it in `WhatsAppMediaUpload` for
     25 days.
-- [ ] T017 Implement a pure `deliver_batch(batch_id) -> "done" | "retry"` in
+- [X] T017 Implement a pure `deliver_batch(batch_id) -> "done" | "retry"` in
   `backend/apps/whatsapp/outbound.py`, and a thin Celery task `deliver(batch_id)` in
   `backend/apps/whatsapp/tasks.py` (`bind=True`, `max_retries=4`) that calls it and, on
   `"retry"`, raises `self.retry(countdown=[10, 60, 300][retries])`:
@@ -173,7 +173,7 @@ outbound.md, link-api.md, admin-api.md, speech-endpoint.md), quickstart.md
     `deliver.retry` (H2).
 ### 003 hooks (research R4)
 
-- [ ] T018 Write `backend/apps/ai/tests/test_channel_hooks.py`:
+- [X] T018 Write `backend/apps/ai/tests/test_channel_hooks.py`:
   - `handle_message(record_only=True)` stores the user message with `meta` in `payload` and calls
     no model.
   - `verified_phone` pre-fills the checkout phone in `collect_guest_details`/`checkout`.
@@ -183,7 +183,7 @@ outbound.md, link-api.md, admin-api.md, speech-endpoint.md), quickstart.md
     fingerprint inputs).
   - `AgentReply.incoming` is the stored user message.
   - The `/api/ai/chat` response keys are unchanged.
-- [ ] T019 Implement T018 in `backend/apps/ai/agent.py` and `backend/apps/ai/tools.py`:
+- [X] T019 Implement T018 in `backend/apps/ai/agent.py` and `backend/apps/ai/tools.py`:
   - Add the keyword-only `verified_phone=None, phone_orders=None, meta=None, record_only=False` to
     `handle_message`.
   - Add `ToolContext.verified_phone`, `phone_orders` and `checkout_summary`.
@@ -207,7 +207,7 @@ to that number (`FakeGraph.sent`).
 
 ### Tests (write first, must fail)
 
-- [ ] T020 [P] [US1] Write `backend/apps/whatsapp/tests/test_webhook.py`:
+- [X] T020 [P] [US1] Write `backend/apps/whatsapp/tests/test_webhook.py`:
   - GET handshake: OK returns the challenge as text/plain; a wrong token, wrong mode or empty
     configured token returns 403.
   - A POST with a bad or missing signature returns 403 with zero rows and no task (SC-001).
@@ -219,7 +219,7 @@ to that number (`FakeGraph.sent`).
   - Status callbacks move an outbound row forward only (`read` then `delivered` stays `read`),
     and `failed` stores the error code and title.
   - An unknown status id is ignored.
-- [ ] T021 [P] [US1] Write `backend/apps/whatsapp/tests/test_processing.py`:
+- [X] T021 [P] [US1] Write `backend/apps/whatsapp/tests/test_processing.py`:
   - A new number gets a Swahili reply listing only active DB products with DB prices (US1-1).
   - A follow-up uses the history (US1-2).
   - Up to 3 product photos are sent, with the caption "<name> — <price> TZS" from the DB
@@ -234,7 +234,7 @@ to that number (`FakeGraph.sent`).
   - A long reply is split in order.
   - The contact language follows the conversation.
   - `last_inbound_at` never moves backwards.
-- [ ] T022 [P] [US1] Write `backend/apps/whatsapp/tests/test_reset.py` (FR-007a):
+- [X] T022 [P] [US1] Write `backend/apps/whatsapp/tests/test_reset.py` (FR-007a):
   - After 7 days of silence, a new conversation is created. The guest cart carries over minus
     inactive and out-of-stock lines, and the note lists the removed names. `checkout_details` and
     `last_order` are reset. `WhatsAppOrder` rows are untouched.
@@ -244,10 +244,10 @@ to that number (`FakeGraph.sent`).
 
 ### Implementation
 
-- [ ] T023 [US1] Implement `backend/apps/whatsapp/parsing.py`: `parse(payload) -> list[Change]`
+- [X] T023 [US1] Implement `backend/apps/whatsapp/parsing.py`: `parse(payload) -> list[Change]`
   with the contact, message and status dataclasses, using the type mapping table in
   `contracts/webhook.md`. `sent_at` comes from the unix `timestamp`. It tolerates missing keys.
-- [ ] T024 [US1] Implement `WebhookView` in `backend/apps/whatsapp/views.py`:
+- [X] T024 [US1] Implement `WebhookView` in `backend/apps/whatsapp/views.py`:
   - Settings: `authentication_classes=[]`, `permission_classes=[AllowAny]`,
     `throttle_classes=[]`, csrf-exempt.
   - GET handshake.
@@ -256,13 +256,13 @@ to that number (`FakeGraph.sent`).
     `on_commit(drain_contact.delay)`. Apply status callbacks forward only.
   - Document it with `extend_schema(tags=["whatsapp-webhook"])`.
   - Route `webhook/` in `backend/apps/whatsapp/urls.py`.
-- [ ] T025 [US1] Implement `drain_contact(contact_id)` in `backend/apps/whatsapp/tasks.py`
+- [X] T025 [US1] Implement `drain_contact(contact_id)` in `backend/apps/whatsapp/tasks.py`
   (`soft_time_limit = AI_CHAT_TIMEOUT + 60`):
   - Take the `advisory_lock`. If it is held, return.
   - Reset `processing` rows older than `AI_CHAT_TIMEOUT + 120 s` to `received`.
   - Loop over the oldest `received` row by `(sent_at, id)` → `processing.process(inbound)`.
   - Release the lock, re-check for `received` rows, and loop if any (research R3).
-- [ ] T026 [US1] Implement `backend/apps/whatsapp/processing.py`, following steps 1–8 of
+- [X] T026 [US1] Implement `backend/apps/whatsapp/processing.py`, following steps 1–8 of
   `contracts/webhook.md` "Processing pipeline", for the `text` and `unsupported` types:
   - `current_conversation(contact)`, including the reset and cart pruning of research R12.
   - `rate_limited(contact, inbound)` (research R11).
@@ -275,9 +275,9 @@ to that number (`FakeGraph.sent`).
     picked as in research R7 (names found in the text first, max
     `WHATSAPP_MAX_PRODUCT_PHOTOS`, product's first image via `product_media_id`), as one batch.
   - Setting `inbound.chat_message`, `status`, `processed_at` and `contact.language`.
-- [ ] T027 [US1] Handle `WindowClosed` inside `send_reply`: mark the inbound `answered` with error
+- [X] T027 [US1] Handle `WindowClosed` inside `send_reply`: mark the inbound `answered` with error
   `window_closed` and log it. This only happens for delayed messages, so it never raises.
-- [ ] T028 [US1] Register read-only Django admins for the contact, inbound and outbound models in
+- [X] T028 [US1] Register read-only Django admins for the contact, inbound and outbound models in
   `backend/apps/whatsapp/admin.py`, with list filters by status and type.
 
 **Checkpoint**: T020–T022 pass. US1 works end to end with fakes.
