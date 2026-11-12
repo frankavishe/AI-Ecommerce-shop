@@ -8,6 +8,15 @@
 
 **Input**: User description: "WhatsApp channel (004): let shoppers use the existing AI shopping assistant (003) through the Meta WhatsApp Cloud API. Inbound webhook must verify X-Hub-Signature-256 and the GET verify-token handshake, and must ignore duplicate message IDs (idempotent). A WhatsApp phone number maps to a guest or existing customer conversation and reuses the 003 assistant service unchanged. Supported inbound messages: text, images (routed to search-by-photo), and voice notes (transcribed by a self-hosted whisper model, then sent to the assistant as text; this is the voice work deferred from 003). Outbound: text replies, product images, and the Stakaba payment link. Respect WhatsApp's 24-hour customer-service window and use approved template messages outside it (e.g. order paid/shipped notifications). Human handoff hands the conversation to staff, reusing 003 handoff. Messages are processed asynchronously (Celery), with per-number rate limits and a fallback reply when the model service is down. Swahili-first, Tanzania. Automated tests mock the Graph API and whisper; an opt-in sandbox marker allows real calls, like the Stakaba sandbox tests."
 
+## Clarifications
+
+### Session 2026-11-11
+
+- Q: Should WhatsApp order confirmation use tap buttons instead of relying on a typed "ndiyo"? → A: Yes. The order summary comes with Confirm / Change buttons, and a Confirm tap places the order on the server without the model. Typed confirmation still works.
+- Q: How does a logged-in customer get the WhatsApp link code? → A: On the website account page: a "Link WhatsApp" card shows the code and a WhatsApp link that pre-fills the message.
+- Q: Does a returning WhatsApp shopper continue the old conversation? → A: After 7 days with no shopper message, the next message starts a new conversation. The cart carries over, with unavailable items dropped and a note; orders and the account link stay.
+- Q: What per-number rate limit should apply? → A: 10 messages per minute and 200 per day, both configurable.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Shopper chats with the shop on WhatsApp (Priority: P1)
@@ -67,17 +76,22 @@ order is returned without asking for the phone again.
    only needs to give name, region and street.
 2. **Given** confirmed details, **When** the order is created, **Then** the shopper receives the
    payment link on WhatsApp, and the total in the message equals the order's stored total.
-3. **Given** an order placed from a WhatsApp number, **When** the same number asks for its
+3. **Given** the order summary was sent with Confirm / Change buttons, **When** the shopper taps
+   Confirm, **Then** the order is created from the server cart and the payment link is sent,
+   without depending on the assistant understanding the tap. Tapping the same Confirm twice
+   creates only one order. A Confirm tap on an outdated summary (the cart changed since) is
+   refused, and a fresh summary is sent.
+4. **Given** an order placed from a WhatsApp number, **When** the same number asks for its
    status, **Then** the status is given without asking for the order number and phone again.
-4. **Given** an order placed from another number, **When** this number asks about it, **Then**
+5. **Given** an order placed from another number, **When** this number asks about it, **Then**
    the order number and the matching phone are still required (the 003 rule).
-5. **Given** a number that matches a registered customer's phone but was never linked, **When**
+6. **Given** a number that matches a registered customer's phone but was never linked, **When**
    the shopper asks "where is my order?", **Then** only orders placed from this WhatsApp number
    are shown, not the account's other orders.
-6. **Given** a logged-in customer who got a link code from the shop, **When** they send that code
+7. **Given** a logged-in customer who got a link code from the shop, **When** they send that code
    from their WhatsApp number within 10 minutes, **Then** the number is linked to their account
    and they can see their account orders and use saved addresses in the WhatsApp chat.
-7. **Given** a wrong, expired or already-used code, **When** it is sent, **Then** nothing is
+8. **Given** a wrong, expired or already-used code, **When** it is sent, **Then** nothing is
    linked and the shopper is told the code didn't work.
 
 ---
@@ -210,18 +224,25 @@ and none is sent twice when the same change is replayed.
   ID. Replays and duplicate deliveries MUST NOT trigger a second assistant run or reply.
 - **FR-005**: Messages from one number MUST be handled one at a time, in the order sent.
 - **FR-006**: Supported inbound types are text, image (with optional caption) and voice/audio.
-  Other types MUST get a short "here's what I can handle" reply in the shopper's language. Button
-  and list replies, if used, MUST be treated as text.
+  Other types MUST get a short "here's what I can handle" reply in the shopper's language.
+  Button replies are handled as described in FR-016a.
 
 **Shoppers and conversations**
 
 - **FR-007**: Each WhatsApp number (stored in E.164 format) MUST map to one active WhatsApp
   conversation with its own cart, reusing the 003 conversation, cart and assistant without
   changing their rules.
+- **FR-007a**: When a number writes after 7 days or more without a shopper message, the system
+  MUST start a new conversation for it, so old context is not used. The cart carries over to the
+  new conversation. Items that are no longer active or in stock are removed, and the shopper is
+  told which ones. Orders, update preferences and the account link are not affected. A
+  conversation flagged for a human is not reset until staff release it.
 - **FR-008**: A WhatsApp conversation MUST start as a guest conversation, even when the number
   matches a registered customer's phone. A logged-in customer MAY link their account by getting a
-  short one-time link code from the shop (valid 10 minutes, single use) and sending it from their
-  WhatsApp number. On a match, the number is linked to that account and marked as WhatsApp-verified,
+  short one-time link code from a "Link WhatsApp" card on the website account page (valid 10
+  minutes, single use) and sending it from their WhatsApp number. The card also offers a link that
+  opens WhatsApp with the code pre-filled, and shows the linked number with an Unlink action once
+  linked. On a match, the number is linked to that account and marked as WhatsApp-verified,
   and from then on the conversation acts as that customer (their account orders and saved
   addresses). A wrong or expired code changes nothing, and repeated wrong codes from one number
   are rate-limited. A customer can unlink their number. Linking a number already linked to another
@@ -251,6 +272,13 @@ and none is sent twice when the same change is replayed.
   photo with its name and server price (at most 3 per reply).
 - **FR-016**: Payment links MUST be sent as WhatsApp messages, with the order number and server
   total.
+- **FR-016a**: When the assistant shows the order summary before checkout, the system MUST send it
+  with two tap buttons, Confirm and Change. A Confirm tap MUST place the order directly on the
+  server from the current cart and details (no model involved), then send the payment link. Each
+  button is tied to the summary it came with. A tap on an outdated summary (the cart or details
+  changed since) MUST be refused with a fresh summary, and repeated taps MUST NOT create a second
+  order. A Change tap is passed to the assistant as the text "I want to change something".
+  Typed confirmation through the assistant keeps working.
 - **FR-017**: Free-form messages (assistant replies and staff replies) MUST only be sent within
   24 hours of the shopper's last message. Outside that window, only approved template messages
   may be sent.
@@ -260,8 +288,9 @@ and none is sent twice when the same change is replayed.
 
 **Rate limits and failures**
 
-- **FR-019**: The system MUST limit how many messages per number the assistant processes per
-  minute and per day. A shopper over the limit gets one polite "please slow down" note per
+- **FR-019**: The system MUST limit how many messages per number the assistant processes: by
+  default 10 per minute and 200 per day, both configurable. Messages over the limit are saved but
+  not answered by the assistant. A shopper over the limit gets one polite "please slow down" note per
   window, not one per message.
 - **FR-020**: When the model service, speech model or image service is unavailable or too slow,
   the shopper MUST get a short apology in their language, the incoming message MUST be saved, and
@@ -345,8 +374,11 @@ and none is sent twice when the same change is replayed.
   the CPU setup only needs to work correctly, not fast.
 - Staff tools in this feature are admin-only API actions plus the existing back-office admin.
   A dedicated staff inbox screen in the web app is a later feature.
-- Marketing broadcasts, catalog/commerce features inside WhatsApp, interactive buttons for
-  checkout, group chats, and replying with voice are out of scope.
+- The only web storefront change in this feature is the "Link WhatsApp" card on the account
+  page. The Android app's version of it comes later.
+- Marketing broadcasts, catalog/commerce features inside WhatsApp, interactive buttons other than
+  the order Confirm / Change buttons (FR-016a), group chats, and replying with voice are out of
+  scope.
 - One shop business number. Multiple numbers or WhatsApp accounts are out of scope.
 - WhatsApp conversation pricing from Meta is accepted as an operating cost. Rate limits keep it
   bounded.

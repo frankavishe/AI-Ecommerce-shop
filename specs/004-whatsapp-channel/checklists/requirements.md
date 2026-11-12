@@ -36,3 +36,6 @@
 - Iteration 2: FR-008 resolved (user choice 2026-11-11). WhatsApp chats start as guests, and a
   logged-in customer links their number by sending a one-time code from the shop. Automatic
   linking was rejected because customer phones are not verified at sign-up. All items pass.
+- Iteration 3: clarify session 2026-11-11 (4 Q&As). It added FR-007a (7-day conversation reset)
+  and FR-016a (Confirm / Change buttons). It extended FR-008 (Link WhatsApp card on the account
+  page) and set the FR-019 defaults (10/min, 200/day, configurable). All items still pass.
