@@ -390,7 +390,7 @@ simulated Swahili voice note (`FakeSpeech` transcript) gets a reply that answers
 
 ### Tests (write first, must fail)
 
-- [ ] T040 [P] [US3] Write `backend/apps/whatsapp/tests/test_media.py`:
+- [X] T040 [P] [US3] Write `backend/apps/whatsapp/tests/test_media.py`:
   - A photo with or without a caption runs `handle_message` with the image, and the matching
     product is shown (US3-1).
   - A photo > 10 MB (by `file_size` and by bytes) or a GIF → `image_rejected`, no model call
@@ -404,28 +404,28 @@ simulated Swahili voice note (`FakeSpeech` transcript) gets a reply that answers
   - Each unsupported type (video, document, sticker, location, contacts) → `unsupported`, no
     model call (US3-4).
   - The purge deletes audio files older than 30 days.
-- [ ] T041 [P] [US3] Write `backend/apps/ai/tests/test_speech_client.py`: `transcribe()` maps
+- [X] T041 [P] [US3] Write `backend/apps/ai/tests/test_speech_client.py`: `transcribe()` maps
   `language` `swahili`/`sw` → `sw` and `english`/`en` → `en`, with others → None. Connection or
   HTTP errors → `ModelUnavailable`. `use_fakes(speech=…)` overrides the client.
 
 ### Implementation
 
-- [ ] T042 [US3] Add `transcribe(audio_bytes, filename) -> {"text", "language", "duration"}` to
+- [X] T042 [US3] Add `transcribe(audio_bytes, filename) -> {"text", "language", "duration"}` to
   `backend/apps/ai/clients.py`. It uses `openai.OpenAI(base_url=AI_SPEECH_BASE_URL,
   timeout=AI_SPEECH_TIMEOUT).audio.transcriptions.create(model=AI_SPEECH_MODEL,
   file=(filename, bytes), response_format="verbose_json")`, with the `speech` override. Add
   `FakeSpeech` (scripted results or raises) to `backend/apps/ai/testing.py`.
-- [ ] T043 [US3] Add `download_media(inbound, max_bytes, allowed_mimes)` to
+- [X] T043 [US3] Add `download_media(inbound, max_bytes, allowed_mimes)` to
   `backend/apps/whatsapp/processing.py`, and image and audio handlers following step 6 of
   `contracts/webhook.md`:
   - Images go in as a `ContentFile(name=f"wa-{id}.{ext}")`.
   - Audio is saved to `inbound.media`.
   - The voice prefix uses `texts.heard`, cut to 200 characters.
   - The detected language is passed to `handle_message(language=…)`.
-- [ ] T044 [US3] Extend `purge_old_conversations` in `backend/apps/ai/tasks.py` to delete
+- [X] T044 [US3] Extend `purge_old_conversations` in `backend/apps/ai/tasks.py` to delete
   `WhatsAppInboundMessage.media` files older than 30 days and clear the field. Import it lazily
   to avoid an app cycle.
-- [ ] T045 [P] [US3] Create the sidecar `ai/whisper/`:
+- [X] T045 [P] [US3] Create the sidecar `ai/whisper/`:
   - `app.py`: FastAPI. It loads `WhisperModel(WHISPER_MODEL, device=WHISPER_DEVICE,
     compute_type=WHISPER_COMPUTE_TYPE)` at startup and serves `POST /v1/audio/transcriptions`
     (multipart `file`, `model`, `response_format`). The response is
@@ -434,7 +434,7 @@ simulated Swahili voice note (`FakeSpeech` transcript) gets a reply that answers
   - A `Dockerfile` modelled on `ai/siglip/Dockerfile`.
 
   The contract is `contracts/speech-endpoint.md`.
-- [ ] T046 [P] [US3] Add a `whisper` service to `infra/docker-compose.yml`:
+- [X] T046 [P] [US3] Add a `whisper` service to `infra/docker-compose.yml`:
   - profile `ai`, port `8091:8091`
   - a volume for the model cache
   - `WHISPER_MODEL=small`, `WHISPER_DEVICE=cpu`, `WHISPER_COMPUTE_TYPE=int8`

@@ -75,7 +75,8 @@ def reindex_all(products=True, knowledge=True, force=False):
 
 @shared_task
 def purge_old_conversations():
-    """Retention (spec): conversations idle for 90 days are deleted; shopper photos after 30 days."""
+    """Retention (spec): conversations idle for 90 days are deleted; shopper photos and WhatsApp voice
+    audio after 30 days."""
     now = timezone.now()
     old = Conversation.objects.filter(updated_at__lt=now - CONVERSATION_RETENTION)
     for message in ChatMessage.objects.filter(conversation__in=old).exclude(image="").exclude(image=None):
@@ -92,4 +93,15 @@ def purge_old_conversations():
         message.image_deleted = True
         message.save(update_fields=["image", "image_deleted"])
         photos += 1
-    return {"conversations": conversations, "images": photos}
+
+    # WhatsApp voice notes (004, FR-013): the audio file goes after 30 days, the transcript stays.
+    from apps.whatsapp.models import WhatsAppInboundMessage  # lazy: whatsapp depends on ai
+
+    audio = 0
+    for inbound in (WhatsAppInboundMessage.objects.filter(received_at__lt=now - PHOTO_RETENTION)
+                    .exclude(media="").exclude(media=None)):
+        inbound.media.delete(save=False)
+        inbound.media = None
+        inbound.save(update_fields=["media"])
+        audio += 1
+    return {"conversations": conversations, "images": photos, "audio": audio}

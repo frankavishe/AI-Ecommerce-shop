@@ -5,16 +5,19 @@ number are handled one at a time and in send order. Nothing here runs inside a l
 the 003 tools commit on their own, and each reply batch is queued in a small atomic block.
 """
 
+import io
 import logging
 import uuid
 from dataclasses import dataclass, field
 from datetime import timedelta
 
 from django.conf import settings
+from django.core.files.base import ContentFile
 from django.db import transaction
 from django.utils import timezone
+from PIL import Image
 
-from apps.ai import agent, prompts
+from apps.ai import agent, clients, prompts
 from apps.ai.models import Conversation
 from apps.catalog.models import Product
 from apps.orders.models import Cart, Order
@@ -275,8 +278,111 @@ def handle_unsupported(job):
     return reply_fixed(job, "unsupported", S.REJECTED)
 
 
+# --- Media (research R7, R9) ----------------------------------------------------------------------
+
+
+class MediaRejected(Exception):
+    """The file is not one we accept; `key` is the server text to answer with."""
+
+    def __init__(self, key):
+        super().__init__(key)
+        self.key = key
+
+
+class MediaFailed(Exception):
+    """The file could not be fetched from WhatsApp; the shopper is asked to send it again."""
+
+
+IMAGE_MIMES = {"image/jpeg", "image/png", "image/webp"}
+IMAGE_FORMATS = {"JPEG": "jpg", "PNG": "png", "WEBP": "webp"}
+AUDIO_EXTENSIONS = {"audio/ogg": "ogg", "audio/mpeg": "mp3", "audio/mp4": "m4a", "audio/aac": "aac",
+                    "audio/amr": "amr", "audio/opus": "opus", "audio/wav": "wav"}
+
+
+def _base_mime(mime):
+    return (mime or "").split(";", 1)[0].strip().lower()
+
+
+def download_media(job, max_bytes, allowed, rejected_key):
+    """Fetch the message's media (a fresh URL each time, it expires after ~5 min). `allowed` is a
+    predicate on the base mime type. Returns (bytes, base mime)."""
+    inbound = job.inbound
+    mime = _base_mime(inbound.media_mime)
+    if not allowed(mime):
+        raise MediaRejected(rejected_key)
+    try:
+        client = graph.get_client()
+        info = client.get_media(inbound.media_id)
+        if (info.get("file_size") or 0) > max_bytes:
+            raise MediaRejected(rejected_key)
+        mime = _base_mime(info.get("mime_type")) or mime
+        if not allowed(mime):
+            raise MediaRejected(rejected_key)
+        content = client.download(info["url"])
+    except (graph.GraphError, graph.NotConfigured, KeyError) as exc:
+        logger.warning("WhatsApp media %s not downloaded: %s", inbound.media_id, exc)
+        raise MediaFailed from exc
+    if len(content) > max_bytes:
+        raise MediaRejected(rejected_key)
+    return content, mime
+
+
+def _media_reply(job, exc):
+    if isinstance(exc, MediaFailed):
+        return reply_fixed(job, "media_retry", S.FAILED, "media_retry")
+    return reply_fixed(job, exc.key, S.REJECTED, exc.key)
+
+
+def handle_image(job):
+    try:
+        content, _ = download_media(job, settings.AI_UPLOAD_MAX_BYTES, IMAGE_MIMES.__contains__, "image_rejected")
+        try:  # trust the bytes, not the declared type (a GIF sent as image/jpeg is still a GIF)
+            fmt = Image.open(io.BytesIO(content)).format
+        except (OSError, ValueError):
+            fmt = None
+        if fmt not in IMAGE_FORMATS:
+            raise MediaRejected("image_rejected")
+    except (MediaRejected, MediaFailed) as exc:
+        return _media_reply(job, exc)
+    image = ContentFile(content, name=f"wa-{job.inbound.pk}.{IMAGE_FORMATS[fmt]}")
+    return run_turn(job, job.inbound.text, image=image)
+
+
+def handle_audio(job):
+    inbound = job.inbound
+    try:
+        content, mime = download_media(job, settings.WHATSAPP_VOICE_MAX_BYTES,
+                                       lambda m: m.startswith("audio/"), "voice_retry")
+    except (MediaRejected, MediaFailed) as exc:
+        return _media_reply(job, exc)
+
+    filename = f"wa-{inbound.pk}.{AUDIO_EXTENSIONS.get(mime, 'ogg')}"
+    inbound.media.save(filename, ContentFile(content), save=False)
+    inbound.save(update_fields=["media"])
+    try:
+        heard = clients.transcribe(content, filename)
+    except clients.ModelUnavailable as exc:
+        logger.warning("Speech model unavailable: %s", exc)
+        record(job, text="")
+        send_system(job, prompts.fallback("model_unavailable", job.lang))
+        return S.FAILED, "speech_unavailable"
+
+    transcript = " ".join((heard.get("text") or "").split())
+    inbound.transcript, inbound.transcript_language = transcript, heard.get("language") or ""
+    inbound.duration_s = heard.get("duration")
+    inbound.save(update_fields=["transcript", "transcript_language", "duration_s"])
+    if not transcript or (inbound.duration_s or 0) > settings.WHATSAPP_VOICE_MAX_SECONDS:
+        return reply_fixed(job, "voice_retry", S.REJECTED, "voice_retry")
+
+    language = heard.get("language")
+    prefix = texts.heard(transcript, language or job.lang)
+    return run_turn(job, transcript, language=language, prefix=prefix, transcript=transcript)
+
+
 TYPE_HANDLERS = {
     Inbound.Type.TEXT: handle_text,
+    Inbound.Type.IMAGE: handle_image,
+    Inbound.Type.AUDIO: handle_audio,
     Inbound.Type.UNSUPPORTED: handle_unsupported,
 }
 
