@@ -7,7 +7,7 @@ import json
 import logging
 import re
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from django.conf import settings
 
@@ -29,6 +29,10 @@ class AgentReply:
     text: str
     payload: dict
     error: str
+    # Channel extras (004), never part of the chat API payload: the checkout summary the tools
+    # computed this turn, and the stored shopper message.
+    summary: dict | None = None
+    incoming: ChatMessage | None = field(default=None, repr=False)
 
 
 # Small models copy bookkeeping notes from history into their replies instead of calling the tool.
@@ -77,8 +81,18 @@ def _completed_actions(calls, language):
     return done
 
 
-def handle_message(conversation: Conversation, text="", image=None, user=None, language=None):
-    """Store the shopper's message, run the model with role-scoped tools, store and return the reply."""
+EMPTY_PAYLOAD = {"products": [], "cart": None, "order": None, "payment": None}
+
+
+def handle_message(conversation: Conversation, text="", image=None, user=None, language=None, *,
+                   verified_phone=None, phone_orders=None, meta=None, record_only=False):
+    """Store the shopper's message, run the model with role-scoped tools, store and return the reply.
+
+    Channel hooks (004, all optional): `verified_phone` is a phone the channel vouches for (offered
+    as the checkout phone); `phone_orders` is a queryset of orders this shopper may look up without
+    the phone; `meta` is stored in the user message's payload; `record_only` saves the message
+    without running the model (the reply's `message` is then None).
+    """
     started = _now()
     deadline = started + settings.AI_CHAT_TIMEOUT
     text = (text or "").strip()
@@ -88,14 +102,17 @@ def handle_message(conversation: Conversation, text="", image=None, user=None, l
     lang = conversation.language
     incoming = ChatMessage.objects.create(
         conversation=conversation, role=ChatMessage.Role.USER, text=text, image=image, language=lang,
+        payload=meta or {},
     )
+    if record_only:
+        return AgentReply(None, "", dict(EMPTY_PAYLOAD), "", incoming=incoming)
 
     if conversation.state == Conversation.State.NEEDS_HUMAN:
         notice = prompts.HANDOFF_NOTICE[lang]
         message = ChatMessage.objects.create(
             conversation=conversation, role=ChatMessage.Role.SYSTEM_NOTE, text=notice, language=lang,
         )
-        return AgentReply(message, notice, {"products": [], "cart": None, "order": None, "payment": None}, "")
+        return AgentReply(message, notice, dict(EMPTY_PAYLOAD), "", incoming=incoming)
 
     image_bytes = None
     if image is not None:
@@ -105,7 +122,8 @@ def handle_message(conversation: Conversation, text="", image=None, user=None, l
 
     authenticated = user is not None and user.is_authenticated
     ctx = ToolContext(conversation=conversation, user=user if authenticated else None,
-                      role=CUSTOMER if authenticated else GUEST, image_bytes=image_bytes)
+                      role=CUSTOMER if authenticated else GUEST, image_bytes=image_bytes,
+                      verified_phone=verified_phone, phone_orders=phone_orders)
     tools = [tool.spec() for tool in tools_for(ctx.role)]
     history, notes = _history(conversation, incoming.pk)
     messages = [
@@ -169,4 +187,4 @@ def handle_message(conversation: Conversation, text="", image=None, user=None, l
         latency_ms=max(0, round((_now() - started) * 1000)),
     )
     conversation.save(update_fields=["updated_at"])
-    return AgentReply(message, reply, payload, error)
+    return AgentReply(message, reply, payload, error, summary=ctx.checkout_summary, incoming=incoming)

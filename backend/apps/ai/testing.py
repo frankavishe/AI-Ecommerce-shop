@@ -100,6 +100,25 @@ class FakeVision:
         return self.caption
 
 
+class FakeSpeech:
+    """Plays back scripted transcriptions ({"text", "language", "duration"} dicts, or exceptions to
+    raise) and records (audio_bytes, filename). When the script runs out it hears "habari"."""
+
+    def __init__(self, *script):
+        self.script = list(script)
+        self.calls = []
+
+    def add(self, *items):
+        self.script.extend(items)
+
+    def transcribe(self, audio_bytes, filename):
+        self.calls.append((audio_bytes, filename))
+        item = self.script.pop(0) if self.script else {"text": "habari", "language": "sw", "duration": 2.0}
+        if isinstance(item, Exception):
+            raise item
+        return dict(item)
+
+
 def tool_call(tool_name, /, **arguments):
     return {"name": tool_name, "arguments": arguments}
 

@@ -5,6 +5,7 @@
 #   AI_VISION_MODEL=Qwen/Qwen3-VL-8B-Instruct
 #   AI_EMBED_BASE_URL=http://gpu:8080/v1  AI_EMBED_MODEL=BAAI/bge-m3
 #   AI_IMAGE_EMBED_URL=http://gpu:8090  AI_API_KEY=<the shared secret>  AI_CHAT_TIMEOUT=20
+#   AI_SPEECH_BASE_URL=http://gpu:8091/v1  AI_SPEECH_MODEL=large-v3
 name: ai-shop-gpu
 
 x-gpu: &gpu
@@ -46,6 +47,22 @@ services:
       SIGLIP_API_KEY: ${AI_API_KEY:?set AI_API_KEY}
     ports:
       - "8090:8090"
+    volumes:
+      - hf_cache:/models
+
+  whisper:
+    <<: *gpu
+    build:
+      context: ../ai/whisper
+      args:
+        GPU: "1"
+    environment:
+      WHISPER_MODEL: large-v3
+      WHISPER_DEVICE: cuda
+      WHISPER_COMPUTE_TYPE: float16
+      WHISPER_API_KEY: ${AI_API_KEY:?set AI_API_KEY}
+    ports:
+      - "8091:8091"
     volumes:
       - hf_cache:/models
 

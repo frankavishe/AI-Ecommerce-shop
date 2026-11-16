@@ -175,7 +175,7 @@ def test_purge_deletes_old_conversations_and_old_photos(png_bytes, media):
 
     result = purge_old_conversations()
 
-    assert result == {"conversations": 1, "images": 1}
+    assert result == {"conversations": 1, "images": 1, "audio": 0}
     assert not Conversation.objects.filter(pk=old.pk).exists()
     photo.refresh_from_db()
     assert photo.image_deleted is True

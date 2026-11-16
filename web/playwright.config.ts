@@ -38,6 +38,11 @@ export default defineConfig({
         STAKABA_WEBHOOK_TOKEN: "e2e-webhook-token",
         STAKABA_CONFIRM_VIA_API: "False",
         CELERY_TASK_ALWAYS_EAGER: "True",
+        // WhatsApp (004): signed webhooks from e2e/whatsapp.ts; replies are logged, never sent to Meta.
+        WHATSAPP_APP_SECRET: "e2e-wa-secret",
+        WHATSAPP_PHONE_NUMBER_ID: "e2e-number",
+        WHATSAPP_BUSINESS_NUMBER: "+255700000000",
+        WHATSAPP_FAKE_GRAPH: "True",
         ALLOWED_HOSTS: "localhost,127.0.0.1",
       },
     },

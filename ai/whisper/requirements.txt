@@ -1,0 +1,6 @@
+faster-whisper==1.1.1
+av==13.1.0  # faster-whisper 1.1.1 passes metadata_errors=, removed in PyAV 14
+fastapi==0.115.12
+uvicorn[standard]==0.34.2
+python-multipart==0.0.20
+requests==2.32.3  # faster-whisper 1.1.1 imports it but does not declare it

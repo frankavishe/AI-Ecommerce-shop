@@ -6,6 +6,7 @@ Everything else in apps.ai calls these four functions:
     embed_texts(texts) -> list[list[float]]              # AI_TEXT_DIM each
     embed_image(image_bytes) -> list[float]               # AI_IMAGE_DIM
     caption_image(image_bytes) -> str
+    transcribe(audio_bytes, filename) -> {"text", "language": "sw" | "en" | None, "duration"}
 
 Any transport, timeout or server error becomes ModelUnavailable. Tests swap in fakes with
 use_fakes() (see apps/ai/testing.py), so no test talks to a real model by accident.
@@ -26,7 +27,7 @@ _overrides = {}
 
 
 def use_fakes(**fakes):
-    """Replace backends: chat=, embedder=, image=, vision=. Pass None to restore the real one."""
+    """Replace backends: chat=, embedder=, image=, vision=, speech=. Pass None to restore the real one."""
     for name, fake in fakes.items():
         if fake is None:
             _overrides.pop(name, None)
@@ -129,3 +130,33 @@ def caption_image(image_bytes):
     except _OPENAI_ERRORS as exc:
         raise ModelUnavailable(str(exc)) from exc
     return (response.choices[0].message.content or "").strip()
+
+
+# --- Speech (004, research R9, contracts/speech-endpoint.md) --------------------------------------
+
+_SPEECH_LANGUAGES = {"sw": "sw", "swahili": "sw", "en": "en", "english": "en"}
+
+
+def _field(response, name):
+    return response.get(name) if isinstance(response, dict) else getattr(response, name, None)
+
+
+def transcribe(audio_bytes, filename):
+    """Speech to text through an OpenAI-compatible /audio/transcriptions endpoint (self-hosted
+    faster-whisper). The detected language is mapped to "sw"/"en", anything else to None."""
+    if "speech" in _overrides:
+        response = _overrides["speech"].transcribe(audio_bytes, filename)
+    else:
+        try:
+            response = _openai(settings.AI_SPEECH_BASE_URL, settings.AI_SPEECH_TIMEOUT).audio.transcriptions.create(
+                model=settings.AI_SPEECH_MODEL, file=(filename, audio_bytes), response_format="verbose_json",
+            )
+        except _OPENAI_ERRORS as exc:
+            raise ModelUnavailable(str(exc)) from exc
+    language = str(_field(response, "language") or "").strip().lower()
+    try:
+        duration = float(_field(response, "duration") or 0)
+    except (TypeError, ValueError):
+        duration = 0.0
+    return {"text": str(_field(response, "text") or "").strip(),
+            "language": _SPEECH_LANGUAGES.get(language), "duration": duration}

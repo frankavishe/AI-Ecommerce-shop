@@ -715,6 +715,96 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/whatsapp/admin/conversations/{id}/reply/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Send a staff message to the shopper of a WhatsApp conversation. Free text needs the 24-hour
+         *     window; the follow-up template can be sent at any time. The conversation state is unchanged.
+         */
+        post: operations["api_whatsapp_admin_conversations_reply_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/whatsapp/admin/outbound/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Messages sent (or not) to shoppers; ?status=failed finds failed sends and order updates. */
+        get: operations["api_whatsapp_admin_outbound_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/whatsapp/link/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The signed-in user's WhatsApp link: show it, or unlink the number. */
+        get: operations["api_whatsapp_link_retrieve"];
+        put?: never;
+        post?: never;
+        /** @description The signed-in user's WhatsApp link: show it, or unlink the number. */
+        delete: operations["api_whatsapp_link_destroy"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/whatsapp/link/code/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Issue a one-time code the shopper sends from WhatsApp to link that number. */
+        post: operations["api_whatsapp_link_code_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/whatsapp/webhook/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Meta WhatsApp Cloud API webhook: subscription handshake and signed notifications. */
+        get: operations["api_whatsapp_webhook_retrieve"];
+        put?: never;
+        /** @description Meta WhatsApp Cloud API webhook: subscription handshake and signed notifications. */
+        post: operations["api_whatsapp_webhook_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -761,6 +851,7 @@ export interface components {
             /** Format: date-time */
             readonly updated_at: string;
             readonly last_message: string | null;
+            readonly whatsapp: components["schemas"]["WhatsAppBlock"] | null;
         };
         AdminConversationDetail: {
             /** Format: uuid */
@@ -776,6 +867,7 @@ export interface components {
             /** Format: date-time */
             readonly updated_at: string;
             readonly last_message: string | null;
+            readonly whatsapp: components["schemas"]["WhatsAppBlock"] | null;
             readonly messages: components["schemas"]["AdminMessage"][];
         };
         AdminDeliveryRegion: {
@@ -811,9 +903,10 @@ export interface components {
          * @description * `user` - User
          *     * `assistant` - Assistant
          *     * `system_note` - System note
+         *     * `staff` - Staff
          * @enum {string}
          */
-        AdminMessageRoleEnum: "user" | "assistant" | "system_note";
+        AdminMessageRoleEnum: "user" | "assistant" | "system_note" | "staff";
         AdminOrder: {
             readonly number: string;
             readonly status: components["schemas"]["OrderStatusEnum"];
@@ -1017,6 +1110,10 @@ export interface components {
             /** @default  */
             notes: string;
         };
+        Code: {
+            code: string;
+            detail?: string;
+        };
         /**
          * @description * `active` - Active
          *     * `needs_human` - Needs a human
@@ -1033,6 +1130,9 @@ export interface components {
             /** Format: decimal */
             default_fee: string;
         };
+        Detail: {
+            detail: string;
+        };
         /**
          * @description * `sw` - Swahili
          *     * `en` - English
@@ -1046,16 +1146,10 @@ export interface components {
             failed: number;
         };
         IndexFailure: {
-            kind: components["schemas"]["KindEnum"];
+            kind: components["schemas"]["IndexFailureKindEnum"];
             id: number;
             name: string;
             error: string;
-        };
-        IndexStatus: {
-            products: components["schemas"]["IndexCounts"];
-            images: components["schemas"]["IndexCounts"];
-            knowledge: components["schemas"]["IndexCounts"];
-            failures: components["schemas"]["IndexFailure"][];
         };
         /**
          * @description * `product` - product
@@ -1063,7 +1157,13 @@ export interface components {
          *     * `knowledge` - knowledge
          * @enum {string}
          */
-        KindEnum: "product" | "image" | "knowledge";
+        IndexFailureKindEnum: "product" | "image" | "knowledge";
+        IndexStatus: {
+            products: components["schemas"]["IndexCounts"];
+            images: components["schemas"]["IndexCounts"];
+            knowledge: components["schemas"]["IndexCounts"];
+            failures: components["schemas"]["IndexFailure"][];
+        };
         KnowledgeDocument: {
             readonly id: number;
             title?: string;
@@ -1095,6 +1195,26 @@ export interface components {
          * @enum {string}
          */
         LanguageEnum: "sw" | "en";
+        LinkCode: {
+            /** @description One-time code, e.g. LINK-7KQ4XM. Valid for 10 minutes. */
+            code: string;
+            /** Format: date-time */
+            expires_at: string;
+            /**
+             * Format: uri
+             * @description wa.me link that opens WhatsApp with the code typed in.
+             */
+            wa_link: string;
+        };
+        LinkStatus: {
+            linked: boolean;
+            /** @description The linked number, masked: +255 742 *** 331. */
+            number: string | null;
+            /** Format: date-time */
+            linked_at: string | null;
+            /** @description The shop's WhatsApp number (E.164). */
+            business_number: string;
+        };
         MergeCartRequest: {
             cart_token: string;
         };
@@ -1180,6 +1300,38 @@ export interface components {
             /** Format: date-time */
             paid_at?: string | null;
         };
+        Outbound: {
+            readonly id: number;
+            readonly contact_number: string;
+            kind: components["schemas"]["OutboundKindEnum"];
+            trigger: components["schemas"]["TriggerEnum"];
+            text?: string;
+            status?: components["schemas"]["OutboundStatusEnum"];
+            error_code?: string;
+            error?: string;
+            attempts?: number;
+            /** Format: date-time */
+            readonly created_at: string;
+            readonly order_number: string | null;
+        };
+        /**
+         * @description * `text` - Text
+         *     * `image` - Image
+         *     * `buttons` - Buttons
+         *     * `template` - Template
+         * @enum {string}
+         */
+        OutboundKindEnum: "text" | "image" | "buttons" | "template";
+        /**
+         * @description * `queued` - Queued
+         *     * `sent` - Sent
+         *     * `delivered` - Delivered
+         *     * `read` - Read
+         *     * `failed` - Failed
+         *     * `skipped` - Skipped
+         * @enum {string}
+         */
+        OutboundStatusEnum: "queued" | "sent" | "delivered" | "read" | "failed" | "skipped";
         PaginatedAddressList: {
             /** @example 123 */
             count: number;
@@ -1284,6 +1436,21 @@ export interface components {
              */
             previous?: string | null;
             results: components["schemas"]["OrderSummary"][];
+        };
+        PaginatedOutboundList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["Outbound"][];
         };
         PaginatedProductImageList: {
             /** @example 123 */
@@ -1603,11 +1770,30 @@ export interface components {
          * @enum {string}
          */
         SourceEnum: "customer" | "admin" | "system" | "provider";
+        StaffReplyRequest: {
+            /** @description Free text; only while the 24-hour window is open. */
+            text?: string;
+            /**
+             * @description An approved template; can be sent at any time.
+             *
+             *     * `follow_up` - follow_up
+             */
+            template?: components["schemas"]["TemplateEnum"];
+        };
+        StaffReplyResult: {
+            outbound_id: number;
+            status: string;
+        };
         StatusChangeRequest: {
             status: components["schemas"]["OrderStatusEnum"];
             /** @default  */
             note: string;
         };
+        /**
+         * @description * `follow_up` - follow_up
+         * @enum {string}
+         */
+        TemplateEnum: "follow_up";
         TokenRefresh: {
             readonly access: string;
             refresh: string;
@@ -1615,6 +1801,15 @@ export interface components {
         TokenRefreshRequest: {
             refresh: string;
         };
+        /**
+         * @description * `assistant` - Assistant
+         *     * `staff` - Staff
+         *     * `system` - System
+         *     * `order_update` - Order update
+         *     * `payment` - Payment
+         * @enum {string}
+         */
+        TriggerEnum: "assistant" | "staff" | "system" | "order_update" | "payment";
         User: {
             readonly id: number;
             /** @description Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only. */
@@ -1659,6 +1854,19 @@ export interface components {
          * @enum {string}
          */
         VehicleEnum: "motorbike" | "bicycle" | "car" | "bajaji";
+        WhatsAppBlock: {
+            number: string;
+            profile_name: string;
+            /** @description Free text can be sent (last shopper message < 24 h ago). */
+            window_open: boolean;
+            /** Format: date-time */
+            window_closes_at: string | null;
+        };
+        WindowClosed: {
+            code: string;
+            detail: string;
+            templates: string[];
+        };
     };
     responses: never;
     parameters: never;
@@ -1903,6 +2111,8 @@ export interface operations {
     api_ai_admin_conversations_list: {
         parameters: {
             query?: {
+                /** @description Only conversations from this channel. */
+                channel?: "api" | "whatsapp";
                 /** @description Which field to use when ordering the results. */
                 ordering?: string;
                 /** @description A page number within the paginated result set. */
@@ -1931,6 +2141,8 @@ export interface operations {
     api_ai_admin_conversations_retrieve: {
         parameters: {
             query?: {
+                /** @description Only conversations from this channel. */
+                channel?: "api" | "whatsapp";
                 /** @description Only conversations in this state. */
                 state?: "active" | "needs_human";
             };
@@ -1956,6 +2168,8 @@ export interface operations {
     api_ai_admin_conversations_release_create: {
         parameters: {
             query?: {
+                /** @description Only conversations from this channel. */
+                channel?: "api" | "whatsapp";
                 /** @description Only conversations in this state. */
                 state?: "active" | "needs_human";
             };
@@ -3384,6 +3598,221 @@ export interface operations {
                         [key: string]: unknown;
                     };
                 };
+            };
+        };
+    };
+    api_whatsapp_admin_conversations_reply_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["StaffReplyRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["StaffReplyRequest"];
+                "multipart/form-data": components["schemas"]["StaffReplyRequest"];
+            };
+        };
+        responses: {
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffReplyResult"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Code"];
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WindowClosed"];
+                };
+            };
+        };
+    };
+    api_whatsapp_admin_outbound_list: {
+        parameters: {
+            query?: {
+                /** @description Only messages to this contact id. */
+                contact?: number;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description A search term. */
+                search?: string;
+                /** @description Only messages in this state. */
+                status?: "delivered" | "failed" | "queued" | "read" | "sent" | "skipped";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedOutboundList"];
+                };
+            };
+        };
+    };
+    api_whatsapp_link_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LinkStatus"];
+                };
+            };
+        };
+    };
+    api_whatsapp_link_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    api_whatsapp_link_code_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LinkCode"];
+                };
+            };
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Detail"];
+                };
+            };
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Detail"];
+                };
+            };
+        };
+    };
+    api_whatsapp_webhook_retrieve: {
+        parameters: {
+            query?: {
+                "hub.challenge"?: string;
+                "hub.mode"?: string;
+                "hub.verify_token"?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/plain": string;
+                };
+            };
+            /** @description No response body */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    api_whatsapp_webhook_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    [key: string]: unknown;
+                };
+                "application/x-www-form-urlencoded": {
+                    [key: string]: unknown;
+                };
+                "multipart/form-data": {
+                    [key: string]: unknown;
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description No response body */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

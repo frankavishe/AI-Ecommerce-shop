@@ -79,6 +79,11 @@ class ToolContext:
     cart: dict | None = None
     order: dict | None = None
     payment: dict | None = None
+    # Channel facts (004, research R4): a phone the channel vouches for, the orders this shopper may
+    # see without the checkout phone, and the last checkout summary (for Confirm buttons).
+    verified_phone: str | None = None
+    phone_orders: object = None
+    checkout_summary: dict | None = None
 
     @property
     def language(self):
@@ -358,13 +363,15 @@ CONFIRM_WINDOW = timedelta(minutes=10)
 
 
 def prefilled(ctx, details):
-    """A customer's name, phone, email and default saved address fill any gaps."""
+    """A customer's name, phone, email and default saved address fill any gaps; a phone the
+    channel verified (the WhatsApp number) is the default contact phone."""
     details = {key: (details.get(key) or "").strip() for key in DETAIL_FIELDS}
     user = ctx.user
     if user is None:
+        details["phone"] = details["phone"] or ctx.verified_phone or ""
         return details
     details["name"] = details["name"] or user.get_full_name() or user.username
-    details["phone"] = details["phone"] or user.phone or ""
+    details["phone"] = details["phone"] or user.phone or ctx.verified_phone or ""
     details["email"] = details["email"] or user.email or ""
     address = user.addresses.order_by("-is_default", "pk").first()
     if address and not details["region"] and not details["street"]:
@@ -483,6 +490,13 @@ def checkout(ctx, confirm, method=Payment.Method.MOBILE_MONEY, network=None):
         # totals to show (small models skip confirm=false and then invent a summary after a bare refusal).
         conversation.pending_checkout_at = now
         conversation.save(update_fields=["pending_checkout_at", "updated_at"])
+        ctx.checkout_summary = {
+            "lines": [(line["product"].pk, line["quantity"], line["unit_price"])
+                      for line in services.cart_totals(cart)["items"]],
+            "details": {**details, "phone": contact["phone"], "email": contact.get("email") or ""},
+            "method": method, "network": network or "", "fee": fee, "total": total,
+            "subtotal": total - fee,
+        }
         result = {
             **summary, "delivery_fee_tzs": money(fee), "total_tzs": money(total),
             "currency": settings.SHOP_CURRENCY, "payment_method": method,
@@ -511,13 +525,19 @@ def checkout(ctx, confirm, method=Payment.Method.MOBILE_MONEY, network=None):
      "phone": {"type": "string", "maxLength": 20}},
 )
 def order_status(ctx, order_number=None, phone=None):
-    if ctx.user is not None:
+    number = order_number.strip().upper() if order_number else None
+    vouched = ctx.phone_orders  # orders the channel ties to this shopper (no phone needed)
+    order = None
+    if vouched is not None:
+        order = (vouched.filter(number=number).first() if number
+                 else vouched.order_by("-placed_at", "-pk").first())
+    if order is None and ctx.user is not None:
         orders = Order.objects.filter(user=ctx.user)
-        order = (orders.filter(number=order_number.strip().upper()).first() if order_number
+        order = (orders.filter(number=number).first() if number
                  else orders.order_by("-placed_at", "-pk").first())
-    elif not order_number or not phone:
-        return {"ok": False, "error": "I need the order number and the phone number used at checkout."}
-    else:
+    elif order is None:
+        if not order_number or not phone:
+            return {"ok": False, "error": "I need the order number and the phone number used at checkout."}
         try:
             order = order_for_phone(order_number, phone)
         except Http404:
