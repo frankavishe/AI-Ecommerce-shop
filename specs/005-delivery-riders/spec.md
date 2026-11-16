@@ -17,6 +17,15 @@
 
 This feature adds the delivery job between "paid" and "delivered": who carries the order, and where it is on the way. It keeps the order statuses the customer already sees in sync with it.
 
+## Clarifications
+
+### Session 2026-11-16
+
+- Q: How does a rider prove an order was delivered? → A: The rider's word only ("delivered"), recorded with time and rider identity; no customer code, no photo.
+- Q: Is cash on delivery supported? → A: No; orders stay prepaid online (Stakaba).
+- Q: What does the customer get when a delivery fails? → A: An automatic WhatsApp message ("we couldn't deliver today, we'll contact you to arrange another time"); the admin then retries or cancels.
+- Q: Do riders get any web screens in this feature? → A: No; riders use WhatsApp only until the Phase 7 app.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Admin assigns a rider to a paid order (Priority: P1)
@@ -72,7 +81,7 @@ The customer sees the delivery progress on the web order page and tracking page 
 
 1. **Given** a delivery assigned to a rider, **When** the customer opens the order page, **Then** the timeline shows "rider assigned" with the rider's first name and vehicle type, and never shows the rider's full name or other riders.
 2. **Given** a delivery that goes on the way, **When** the status is saved, **Then** the customer gets the existing "out for delivery" WhatsApp message extended with the rider's first name and phone number, in the customer's language, unless they have opted out (STOP).
-3. **Given** a delivery that fails, **When** the status is saved, **Then** the customer is not sent an automatic failure message; the admin decides and the customer hears about the outcome (rescheduled or cancelled) through the existing messages.
+3. **Given** a delivery that fails, **When** the status is saved, **Then** the customer gets one WhatsApp message in their language saying the order could not be delivered today and the shop will contact them to arrange another time (unless they have opted out with STOP); the admin then retries or cancels, and the customer hears about a cancellation through the existing message.
 4. **Given** the same status update arrives twice (e.g. the rider repeats "delivered"), **When** it is processed, **Then** the customer is notified only once.
 
 ---
@@ -118,7 +127,7 @@ Failed deliveries are flagged in the deliveries list. For each, the admin either
 - Two admins assign the same delivery at the same moment: one wins, the other sees the current rider.
 - The rider updates a job at the same moment the admin reassigns it: the update applies only if the rider is still assigned when it is saved; otherwise the rider is told the job was moved.
 - A rider's number is also linked as a customer account (004 account linking): the rider role wins for that number; buying on WhatsApp from that number is not supported in this feature.
-- A rider sends a photo or voice note: voice is transcribed (004) and treated like text; photos are acknowledged but not used (proof-of-delivery photo is out of scope unless clarified otherwise).
+- A rider sends a photo or voice note: voice is transcribed (004) and treated like text; photos are acknowledged but not used (no proof-of-delivery photos).
 - An active rider sends STOP: riders cannot opt out of job messages while active, so job messages keep coming and the rider is told to ask the admin to deactivate them.
 - Staff takeover (004) works for rider conversations too; while flagged, the assistant does not answer the rider.
 - The rider writes outside WhatsApp's 24-hour window: job messages to riders use an approved template, as other proactive messages do.
@@ -162,7 +171,8 @@ Failed deliveries are flagged in the deliveries list. For each, the admin either
 
 - **FR-019**: A rider MUST be messaged on WhatsApp when a job is assigned to them, removed from them, or cancelled, using an approved template when outside the 24-hour window.
 - **FR-020**: Each assignment, removal and cancellation MUST also be stored as a rider inbox entry (read/unread) for the future rider app; this feature exposes the inbox through the API only.
-- **FR-021**: The customer's existing "out for delivery" WhatsApp message MUST include the rider's first name and phone number when a rider is assigned; customer opt-out (STOP) is respected. No other new customer WhatsApp messages are added.
+- **FR-021**: The customer's existing "out for delivery" WhatsApp message MUST include the rider's first name and phone number when a rider is assigned; customer opt-out (STOP) is respected.
+- **FR-021a**: When a delivery attempt fails, the customer MUST be sent one WhatsApp message per failed attempt ("we couldn't deliver today, we'll contact you to arrange another time") in their language, respecting opt-out (STOP). The failure reason given by the rider is not included. No other new customer WhatsApp messages are added.
 - **FR-022**: The customer order page and tracking page MUST show delivery progress (rider assigned with first name and vehicle type, picked up, on the way, delivered) in the customer's language, without exposing other rider data.
 
 **Admin web**
@@ -193,17 +203,17 @@ Failed deliveries are flagged in the deliveries list. For each, the admin either
 - **SC-003**: A rider receives the job message within 1 minute of assignment.
 - **SC-004**: In a scripted evaluation of at least 30 rider messages (Swahili and English, text and voice), at least 90% of status updates and job questions lead to the correct action or answer on the production model.
 - **SC-005**: Zero cases, across automated tests of all rider tools, where a rider can read or change a delivery not assigned to them.
-- **SC-006**: The customer sees each delivery status on the order page within 1 minute of the change, and receives the "on the way" and "delivered" WhatsApp messages exactly once per delivery.
+- **SC-006**: The customer sees each delivery status on the order page within 1 minute of the change, and receives the "on the way" and "delivered" WhatsApp messages exactly once per delivery, and the "couldn't deliver" message exactly once per failed attempt.
 - **SC-007**: Customer "where is my order?" questions to staff drop noticeably after launch (tracked qualitatively by the shop owner over the first month).
 
 ## Assumptions
 
 - Zones are the existing delivery regions; a rider can cover several regions. The free-text zone on the rider profile is replaced by region links.
-- Payment is always taken online before delivery (Stakaba); cash on delivery is out of scope.
-- Riders use WhatsApp only in this feature. The set-password link exists so the future rider app (Phase 7) and the web can be used later; no rider web screens are built now.
+- Payment is always taken online before delivery (Stakaba); cash on delivery is out of scope (confirmed 2026-11-16).
+- Riders use WhatsApp only in this feature (confirmed 2026-11-16). The set-password link exists so the future rider app (Phase 7) and the web can be used later; no rider web screens are built now.
 - FCM push notifications, live rider location/GPS tracking, ETAs, delivery fee changes, route optimisation and rider payouts are out of scope.
-- Proof of delivery is the rider's word ("delivered") recorded with time and rider identity; photos or customer confirmation codes are out of scope.
+- Proof of delivery is the rider's word ("delivered") recorded with time and rider identity; photos or customer confirmation codes are out of scope (confirmed 2026-11-16).
 - Admin cancel and refund flows stay as they are (001/002); this feature only reacts to a cancelled order.
 - The production model (GPU) is used for SC-004; local CPU runs may be flaky, as in 003/004.
-- Rider job templates (assigned, removed, cancelled, welcome) need Meta approval before going live; tests use the fake sender.
+- Rider job templates (assigned, removed, cancelled, welcome) and the customer "couldn't deliver" template need Meta approval before going live; tests use the fake sender.
 - Changes to 003 (agent) and 004 (WhatsApp pipeline) are additive: a rider tool set and routing by number, no changes to customer behaviour.

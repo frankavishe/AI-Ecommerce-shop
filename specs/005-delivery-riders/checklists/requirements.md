@@ -33,4 +33,5 @@
 
 - Iteration 1: US2 scenario 7 mixed two behaviours (ask vs. auto-record); it now has one rule. The rider-STOP edge case was phrased as a question; it is now a rule.
 - WhatsApp-specific terms (template, 24-hour window) are kept because they are business constraints of the channel, as in 004.
-- No clarification markers: defaults are recorded under Assumptions. These are the decisions most worth confirming in `/speckit-clarify`: proof of delivery (rider's word only), cash on delivery (out of scope), regions as zones, no rider web screens, failed delivery = admin decides.
+- No clarification markers: defaults are recorded under Assumptions.
+- Clarify session 2026-11-16: confirmed rider's-word proof of delivery, no cash on delivery and WhatsApp-only riders; changed failed delivery to send the customer an automatic "couldn't deliver" message (US3-3, FR-021a, SC-006). Re-validated: 16/16 still passing.
