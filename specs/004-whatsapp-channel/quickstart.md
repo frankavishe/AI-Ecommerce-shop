@@ -78,3 +78,30 @@ cd web && npm run gen:api && npx vitest run && npx playwright test e2e/account-w
 
 `python manage.py whatsapp_voice_eval --dir apps/whatsapp/eval/voice` (≥ 20 labelled sw/en clips).
 Expected: the target product is in the reply for ≥ 80% of clips. CPU numbers are informative only.
+
+## Validation results
+
+**2026-11-16, local CPU stack (Windows dev box)**: chat qwen3:4b on Ollama, whisper `small` int8 on CPU
+(`docker compose --profile ai up whisper`), eval catalog seeded with `rag_eval --seed` into a
+scratch database, `WHATSAPP_FAKE_GRAPH=true`, `CELERY_TASK_ALWAYS_EAGER=True`, and
+`whatsapp_simulate --inline --timing`.
+
+| Check | Result |
+|---|---|
+| Automated: `pytest -q` (whole backend, 003 included) | 531 passed |
+| `makemigrations --check`, `spectacular --validate`, `npm run gen:api` | clean, no diff |
+| `npx vitest run` / `playwright test e2e/account-whatsapp.spec.ts` | 80 passed / 1 passed |
+| Text "nataka viatu vyekundu" → reply queued | 79.5 s. One Swahili text with DB products and prices. Picking the products was weak on the CPU model (known 003 gap). No photos were sent because the eval catalog has no images |
+| Voice note (English TTS clip, 3.1 s) → reply queued | 46.4 s. Transcript `Hello, do you have red sneakers?` (en, exact). The reply starts with the 🎤 heard line and lists the red sneakers |
+| Speech endpoint failing → fallback | Sent within 1 s, inbound `failed/speech_unavailable` |
+| Confirm/Change buttons and payment text | Not run live, because it would call the Stakaba sandbox. Covered by `test_checkout.py` with fakes |
+
+Found and fixed during the run: the whisper image needed `requests` (faster-whisper 1.1.1 imports it
+but does not declare it) and `av==13.1.0` (PyAV 14 removed an argument faster-whisper 1.1.1 still
+passes).
+
+**Pending**:
+- SC-003 (reply time on production hardware) needs the GPU box.
+- SC-007 (voice hit rate) needs ≥ 20 labelled Swahili/English clips in `apps/whatsapp/eval/voice/`
+  and `whatsapp_voice_eval --min 0.8` on that hardware.
+- Real sends through Meta: quickstart §3.

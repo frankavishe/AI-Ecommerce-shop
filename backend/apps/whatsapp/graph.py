@@ -7,6 +7,8 @@ WHATSAPP_FAKE_GRAPH set in DEBUG, a LoggingGraph logs the payloads instead of ca
 import itertools
 import json
 import logging
+import mimetypes
+from pathlib import Path
 
 import httpx
 from django.conf import settings
@@ -101,6 +103,14 @@ class GraphClient:
         return data["id"]
 
 
+SIM_MEDIA_PREFIX = "sim."
+
+
+def sim_media_dir():
+    """Where whatsapp_simulate puts the files it sends, so any process can serve them."""
+    return Path(settings.MEDIA_ROOT) / "whatsapp" / "sim"
+
+
 class LoggingGraph:
     """DEBUG stand-in that logs sends and serves media registered by whatsapp_simulate."""
 
@@ -108,17 +118,29 @@ class LoggingGraph:
         self._n = itertools.count(1)
         self.media = {}  # media_id -> (bytes, mime)
 
+    def add_media(self, media_id, content, mime):
+        self.media[media_id] = (content, mime)
+
+    def _media(self, media_id):
+        if media_id in self.media:
+            return self.media[media_id]
+        if media_id.startswith(SIM_MEDIA_PREFIX):  # sim.<hex>.<ext>, written by whatsapp_simulate
+            path = sim_media_dir() / media_id.removeprefix(SIM_MEDIA_PREFIX)
+            if path.is_file() and path.parent == sim_media_dir():
+                return path.read_bytes(), mimetypes.guess_type(path.name)[0] or "application/octet-stream"
+        return b"", "application/octet-stream"
+
     def send(self, body):
         wamid = f"wamid.LOG{next(self._n)}"
         logger.warning("WhatsApp (fake) send %s: %s", wamid, json.dumps(body, ensure_ascii=False))
         return wamid
 
     def get_media(self, media_id):
-        content, mime = self.media.get(media_id, (b"", "application/octet-stream"))
+        content, mime = self._media(media_id)
         return {"url": f"fake://{media_id}", "mime_type": mime, "file_size": len(content)}
 
     def download(self, url):
-        return self.media.get(url.removeprefix("fake://"), (b"",))[0]
+        return self._media(url.removeprefix("fake://"))[0]
 
     def upload_media(self, content, mime):
         media_id = f"media.LOG{next(self._n)}"

@@ -537,26 +537,26 @@ nothing.
 
 ## Phase 8: Polish & Cross-Cutting
 
-- [ ] T056 [P] Implement the management command
+- [X] T056 [P] Implement the management command
   `backend/apps/whatsapp/management/commands/whatsapp_simulate.py`. Options: `--from`, and one of
   `--text`, `--image PATH`, `--audio PATH` or `--button ID`. It builds a payload with
   `testing.py`, signs it with `WHATSAPP_APP_SECRET`, and POSTs it to the local webhook (or calls
   the view in-process with `--inline`). It is DEBUG-only. When `WHATSAPP_FAKE_GRAPH` is set, the
   media ids are served from the given file.
-- [ ] T057 [P] Implement `backend/apps/whatsapp/management/commands/whatsapp_voice_eval.py`. It
+- [X] T057 [P] Implement `backend/apps/whatsapp/management/commands/whatsapp_voice_eval.py`. It
   reads `eval/voice/cases.json` (`[{"file", "language", "expect_product"}]`), transcribes each
   clip, runs a turn on a throwaway conversation, and prints a hit rate per language.
   `--min 0.8` exits non-zero below the threshold (SC-007).
-- [ ] T058 [P] Write `backend/apps/whatsapp/tests/test_sandbox.py` (`@pytest.mark.sandbox`,
+- [X] T058 [P] Write `backend/apps/whatsapp/tests/test_sandbox.py` (`@pytest.mark.sandbox`,
   skipped unless `WHATSAPP_SANDBOX_TO` and the real credentials are set). It sends one text and
   one `follow_up` template through the real `GraphClient` and asserts a `wamid` comes back.
-- [ ] T059 [P] Write `backend/apps/whatsapp/tests/test_live_speech.py`
+- [X] T059 [P] Write `backend/apps/whatsapp/tests/test_live_speech.py`
   (`@pytest.mark.live_models`). It transcribes a short Swahili fixture clip
   `apps/whatsapp/eval/voice/sample_sw.ogg` through the real endpoint and asserts non-empty text.
-- [ ] T060 Write the full validation run: `pytest -q` (003 stays green),
+- [X] T060 Write the full validation run: `pytest -q` (003 stays green),
   `makemigrations --check --dry-run`, `spectacular --validate`, `npm run gen:api` with no diff,
   `npx vitest run`, and `npx playwright test e2e/account-whatsapp.spec.ts`. Fix any failures.
-- [ ] T061 Add `--timing` to `whatsapp_simulate` (prints webhook→reply-queued seconds per
+- [X] T061 Add `--timing` to `whatsapp_simulate` (prints webhook→reply-queued seconds per
   message) and run quickstart §2 (simulated end-to-end) against the local CPU stack, and record the
   observed result (reply times, button flow, voice) in `specs/004-whatsapp-channel/quickstart.md`
   under a "Validation results" heading. SC-003 is checked the same way on the GPU box when it
