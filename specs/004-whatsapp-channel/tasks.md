@@ -457,7 +457,7 @@ while the conversation is flagged.
 
 ### Tests (write first, must fail)
 
-- [ ] T047 [P] [US4] Write `backend/apps/whatsapp/tests/test_admin.py`:
+- [X] T047 [P] [US4] Write `backend/apps/whatsapp/tests/test_admin.py`:
   - While flagged, shopper messages are saved and nothing is sent (US4-1).
   - Within the window, a staff reply → 202, a `ChatMessage(role=staff)`, an outbound
     `trigger=staff` with `staff_user` (US4-2).
@@ -472,20 +472,20 @@ while the conversation is flagged.
 
 ### Implementation
 
-- [ ] T048 [US4] In `backend/apps/ai/views.py`, add a `channel` filter (with an
+- [X] T048 [US4] In `backend/apps/ai/views.py`, add a `channel` filter (with an
   `OpenApiParameter`) to `AdminConversationViewSet`. In `backend/apps/ai/serializers.py`, add a
   `whatsapp` SerializerMethodField to the admin serializers (number, profile_name, window_open,
   window_closes_at, or null), looking up `WhatsAppContact` by `conversation`. Prefetch it to
   avoid N+1 queries.
-- [ ] T049 [US4] Implement `StaffReplyView` (`POST
+- [X] T049 [US4] Implement `StaffReplyView` (`POST
   /api/whatsapp/admin/conversations/<uuid:pk>/reply/`, `IsShopAdmin`) per
   `contracts/admin-api.md`. It uses `outbound.queue_text` (split) or
   `queue_template(WHATSAPP_TEMPLATE_FOLLOW_UP)`, catches `WindowClosed` → 409, and stores a
   `ChatMessage(role=STAFF)`.
-- [ ] T050 [US4] Implement `OutboundListView` (`GET /api/whatsapp/admin/outbound/`, filters
+- [X] T050 [US4] Implement `OutboundListView` (`GET /api/whatsapp/admin/outbound/`, filters
   `status`, `contact`, paginated, `IsShopAdmin`) with its serializer. Add `order_number` from the
   `WhatsAppOrderNotification` link. Route both admin views in `backend/apps/whatsapp/urls.py`.
-- [ ] T051 [P] [US4] Register read-only admins for `WhatsAppOrderNotification` and
+- [X] T051 [P] [US4] Register read-only admins for `WhatsAppOrderNotification` and
   `WhatsAppLinkCode` (exclude `code_hash` from the display) in `backend/apps/whatsapp/admin.py`.
 
 **Checkpoint**: T047 passes.

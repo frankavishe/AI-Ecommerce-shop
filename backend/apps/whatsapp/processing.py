@@ -90,8 +90,7 @@ def _process(job):
             return result
 
     if job.conversation.state == Conversation.State.NEEDS_HUMAN:
-        record(job)
-        return S.RECORDED, ""
+        return record_for_staff(job)
 
     return TYPE_HANDLERS.get(inbound.type, handle_unsupported)(job)
 
@@ -174,10 +173,11 @@ def meta(job, **extra):
     return {"whatsapp": {"type": job.inbound.type, "wa_message_id": job.inbound.wa_message_id, **extra}}
 
 
-def record(job, text=None, **meta_extra):
+def record(job, text=None, image=None, **meta_extra):
     """Save the shopper's message to the conversation without answering it."""
     reply = agent.handle_message(job.conversation, text=job.inbound.text if text is None else text,
-                                 user=job.contact.user, meta=meta(job, **meta_extra), record_only=True)
+                                 image=image, user=job.contact.user, meta=meta(job, **meta_extra),
+                                 record_only=True)
     job.inbound.chat_message = reply.incoming
     return reply
 
@@ -333,50 +333,76 @@ def _media_reply(job, exc):
     return reply_fixed(job, exc.key, S.REJECTED, exc.key)
 
 
+def fetch_image(job):
+    """The photo as a ContentFile, or MediaRejected/MediaFailed."""
+    content, _ = download_media(job, settings.AI_UPLOAD_MAX_BYTES, IMAGE_MIMES.__contains__, "image_rejected")
+    try:  # trust the bytes, not the declared type (a GIF sent as image/jpeg is still a GIF)
+        fmt = Image.open(io.BytesIO(content)).format
+    except (OSError, ValueError):
+        fmt = None
+    if fmt not in IMAGE_FORMATS:
+        raise MediaRejected("image_rejected")
+    return ContentFile(content, name=f"wa-{job.inbound.pk}.{IMAGE_FORMATS[fmt]}")
+
+
 def handle_image(job):
     try:
-        content, _ = download_media(job, settings.AI_UPLOAD_MAX_BYTES, IMAGE_MIMES.__contains__, "image_rejected")
-        try:  # trust the bytes, not the declared type (a GIF sent as image/jpeg is still a GIF)
-            fmt = Image.open(io.BytesIO(content)).format
-        except (OSError, ValueError):
-            fmt = None
-        if fmt not in IMAGE_FORMATS:
-            raise MediaRejected("image_rejected")
+        image = fetch_image(job)
     except (MediaRejected, MediaFailed) as exc:
         return _media_reply(job, exc)
-    image = ContentFile(content, name=f"wa-{job.inbound.pk}.{IMAGE_FORMATS[fmt]}")
     return run_turn(job, job.inbound.text, image=image)
 
 
-def handle_audio(job):
+def fetch_voice(job):
+    """Download, store and transcribe the voice note. Returns the transcript (possibly empty) and
+    its language; raises MediaRejected/MediaFailed or clients.ModelUnavailable."""
     inbound = job.inbound
-    try:
-        content, mime = download_media(job, settings.WHATSAPP_VOICE_MAX_BYTES,
-                                       lambda m: m.startswith("audio/"), "voice_retry")
-    except (MediaRejected, MediaFailed) as exc:
-        return _media_reply(job, exc)
-
+    content, mime = download_media(job, settings.WHATSAPP_VOICE_MAX_BYTES,
+                                   lambda m: m.startswith("audio/"), "voice_retry")
     filename = f"wa-{inbound.pk}.{AUDIO_EXTENSIONS.get(mime, 'ogg')}"
     inbound.media.save(filename, ContentFile(content), save=False)
     inbound.save(update_fields=["media"])
+    heard = clients.transcribe(content, filename)
+    transcript = " ".join((heard.get("text") or "").split())
+    inbound.transcript, inbound.transcript_language = transcript, heard.get("language") or ""
+    inbound.duration_s = heard.get("duration")
+    inbound.save(update_fields=["transcript", "transcript_language", "duration_s"])
+    return transcript, heard.get("language")
+
+
+def handle_audio(job):
     try:
-        heard = clients.transcribe(content, filename)
+        transcript, language = fetch_voice(job)
+    except (MediaRejected, MediaFailed) as exc:
+        return _media_reply(job, exc)
     except clients.ModelUnavailable as exc:
         logger.warning("Speech model unavailable: %s", exc)
         record(job, text="")
         send_system(job, prompts.fallback("model_unavailable", job.lang))
         return S.FAILED, "speech_unavailable"
 
-    transcript = " ".join((heard.get("text") or "").split())
-    inbound.transcript, inbound.transcript_language = transcript, heard.get("language") or ""
-    inbound.duration_s = heard.get("duration")
-    inbound.save(update_fields=["transcript", "transcript_language", "duration_s"])
-    if not transcript or (inbound.duration_s or 0) > settings.WHATSAPP_VOICE_MAX_SECONDS:
+    if not transcript or (job.inbound.duration_s or 0) > settings.WHATSAPP_VOICE_MAX_SECONDS:
         return reply_fixed(job, "voice_retry", S.REJECTED, "voice_retry")
-
-    language = heard.get("language")
     prefix = texts.heard(transcript, language or job.lang)
     return run_turn(job, transcript, language=language, prefix=prefix, transcript=transcript)
+
+
+def record_for_staff(job):
+    """A conversation handed to staff: save the message, with the photo or the voice transcript so
+    staff can read it, and send nothing (US4-1). Media problems are logged, never answered."""
+    inbound = job.inbound
+    try:
+        if inbound.type == Inbound.Type.IMAGE:
+            record(job, image=fetch_image(job))
+            return S.RECORDED, ""
+        if inbound.type == Inbound.Type.AUDIO:
+            transcript, _ = fetch_voice(job)
+            record(job, text=transcript, transcript=transcript)
+            return S.RECORDED, ""
+    except (MediaRejected, MediaFailed, clients.ModelUnavailable) as exc:
+        logger.warning("WhatsApp %s %s kept without its media: %r", inbound.type, inbound.wa_message_id, exc)
+    record(job)
+    return S.RECORDED, ""
 
 
 TYPE_HANDLERS = {

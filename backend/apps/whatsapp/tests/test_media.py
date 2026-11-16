@@ -7,11 +7,11 @@ import pytest
 from django.core.files.base import ContentFile
 from django.utils import timezone
 
-from apps.ai import clients, indexing
+from apps.ai import indexing
 from apps.ai.clients import ModelUnavailable
 from apps.ai.models import ChatMessage
 from apps.ai.tasks import purge_old_conversations
-from apps.ai.testing import FakeSpeech, tool_call
+from apps.ai.testing import tool_call
 from apps.catalog.models import ProductImage
 from apps.whatsapp import testing as wa
 from apps.whatsapp.models import WhatsAppContact, WhatsAppInboundMessage as Inbound
@@ -26,14 +26,6 @@ OGG = b"OggS" + b"\x00" * 200
 def media(settings, tmp_path):
     settings.MEDIA_ROOT = tmp_path
     return tmp_path
-
-
-@pytest.fixture
-def speech():
-    fake = FakeSpeech()
-    clients.use_fakes(speech=fake)
-    yield fake
-    clients.use_fakes(speech=None)
 
 
 @pytest.fixture

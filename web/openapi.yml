@@ -272,6 +272,14 @@ paths:
       operationId: api_ai_admin_conversations_list
       description: Assistant conversations, e.g. the ones handed to staff (state=needs_human).
       parameters:
+      - in: query
+        name: channel
+        schema:
+          type: string
+          enum:
+          - api
+          - whatsapp
+        description: Only conversations from this channel.
       - name: ordering
         required: false
         in: query
@@ -314,6 +322,14 @@ paths:
       operationId: api_ai_admin_conversations_retrieve
       description: Assistant conversations, e.g. the ones handed to staff (state=needs_human).
       parameters:
+      - in: query
+        name: channel
+        schema:
+          type: string
+          enum:
+          - api
+          - whatsapp
+        description: Only conversations from this channel.
       - in: path
         name: id
         schema:
@@ -345,6 +361,14 @@ paths:
       operationId: api_ai_admin_conversations_release_create
       description: Assistant conversations, e.g. the ones handed to staff (state=needs_human).
       parameters:
+      - in: query
+        name: channel
+        schema:
+          type: string
+          enum:
+          - api
+          - whatsapp
+        description: Only conversations from this channel.
       - in: path
         name: id
         schema:
@@ -2008,6 +2032,105 @@ paths:
                 type: object
                 additionalProperties: {}
           description: ''
+  /api/whatsapp/admin/conversations/{id}/reply/:
+    post:
+      operationId: api_whatsapp_admin_conversations_reply_create
+      description: |-
+        Send a staff message to the shopper of a WhatsApp conversation. Free text needs the 24-hour
+        window; the follow-up template can be sent at any time. The conversation state is unchanged.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - whatsapp
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StaffReplyRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/StaffReplyRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/StaffReplyRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StaffReplyResult'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Code'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WindowClosed'
+          description: ''
+  /api/whatsapp/admin/outbound/:
+    get:
+      operationId: api_whatsapp_admin_outbound_list
+      description: Messages sent (or not) to shoppers; ?status=failed finds failed
+        sends and order updates.
+      parameters:
+      - in: query
+        name: contact
+        schema:
+          type: integer
+        description: Only messages to this contact id.
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - delivered
+          - failed
+          - queued
+          - read
+          - sent
+          - skipped
+        description: Only messages in this state.
+      tags:
+      - whatsapp
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedOutboundList'
+          description: ''
   /api/whatsapp/link/:
     get:
       operationId: api_whatsapp_link_retrieve
@@ -2236,12 +2359,18 @@ components:
           type: string
           readOnly: true
           nullable: true
+        whatsapp:
+          allOf:
+          - $ref: '#/components/schemas/WhatsAppBlock'
+          nullable: true
+          readOnly: true
       required:
       - created_at
       - id
       - last_message
       - updated_at
       - user
+      - whatsapp
     AdminConversationDetail:
       type: object
       properties:
@@ -2274,6 +2403,11 @@ components:
           type: string
           readOnly: true
           nullable: true
+        whatsapp:
+          allOf:
+          - $ref: '#/components/schemas/WhatsAppBlock'
+          nullable: true
+          readOnly: true
         messages:
           type: array
           items:
@@ -2286,6 +2420,7 @@ components:
       - messages
       - updated_at
       - user
+      - whatsapp
     AdminDeliveryRegion:
       type: object
       properties:
@@ -2896,6 +3031,15 @@ components:
         notes:
           type: string
           default: ''
+    Code:
+      type: object
+      properties:
+        code:
+          type: string
+        detail:
+          type: string
+      required:
+      - code
     ConversationStateEnum:
       enum:
       - active
@@ -2965,7 +3109,7 @@ components:
       type: object
       properties:
         kind:
-          $ref: '#/components/schemas/KindEnum'
+          $ref: '#/components/schemas/IndexFailureKindEnum'
         id:
           type: integer
         name:
@@ -2977,6 +3121,16 @@ components:
       - id
       - kind
       - name
+    IndexFailureKindEnum:
+      enum:
+      - product
+      - image
+      - knowledge
+      type: string
+      description: |-
+        * `product` - product
+        * `image` - image
+        * `knowledge` - knowledge
     IndexStatus:
       type: object
       properties:
@@ -2995,16 +3149,6 @@ components:
       - images
       - knowledge
       - products
-    KindEnum:
-      enum:
-      - product
-      - image
-      - knowledge
-      type: string
-      description: |-
-        * `product` - product
-        * `image` - image
-        * `knowledge` - knowledge
     KnowledgeDocument:
       type: object
       properties:
@@ -3334,6 +3478,75 @@ components:
       - currency
       - number
       - total
+    Outbound:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        contact_number:
+          type: string
+          readOnly: true
+        kind:
+          $ref: '#/components/schemas/OutboundKindEnum'
+        trigger:
+          $ref: '#/components/schemas/TriggerEnum'
+        text:
+          type: string
+        status:
+          $ref: '#/components/schemas/OutboundStatusEnum'
+        error_code:
+          type: string
+          maxLength: 16
+        error:
+          type: string
+        attempts:
+          type: integer
+          maximum: 32767
+          minimum: -32768
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        order_number:
+          type: string
+          readOnly: true
+          nullable: true
+      required:
+      - contact_number
+      - created_at
+      - id
+      - kind
+      - order_number
+      - trigger
+    OutboundKindEnum:
+      enum:
+      - text
+      - image
+      - buttons
+      - template
+      type: string
+      description: |-
+        * `text` - Text
+        * `image` - Image
+        * `buttons` - Buttons
+        * `template` - Template
+    OutboundStatusEnum:
+      enum:
+      - queued
+      - sent
+      - delivered
+      - read
+      - failed
+      - skipped
+      type: string
+      description: |-
+        * `queued` - Queued
+        * `sent` - Sent
+        * `delivered` - Delivered
+        * `read` - Read
+        * `failed` - Failed
+        * `skipped` - Skipped
     PaginatedAddressList:
       type: object
       required:
@@ -3495,6 +3708,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/OrderSummary'
+    PaginatedOutboundList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Outbound'
     PaginatedProductImageList:
       type: object
       required:
@@ -4149,6 +4385,31 @@ components:
         * `admin` - Admin
         * `system` - System
         * `provider` - Payment provider
+    StaffReplyRequest:
+      type: object
+      properties:
+        text:
+          type: string
+          minLength: 1
+          description: Free text; only while the 24-hour window is open.
+          maxLength: 12288
+        template:
+          allOf:
+          - $ref: '#/components/schemas/TemplateEnum'
+          description: |-
+            An approved template; can be sent at any time.
+
+            * `follow_up` - follow_up
+    StaffReplyResult:
+      type: object
+      properties:
+        outbound_id:
+          type: integer
+        status:
+          type: string
+      required:
+      - outbound_id
+      - status
     StatusChangeRequest:
       type: object
       properties:
@@ -4160,6 +4421,11 @@ components:
           maxLength: 255
       required:
       - status
+    TemplateEnum:
+      enum:
+      - follow_up
+      type: string
+      description: '* `follow_up` - follow_up'
     TokenRefresh:
       type: object
       properties:
@@ -4179,6 +4445,20 @@ components:
           minLength: 1
       required:
       - refresh
+    TriggerEnum:
+      enum:
+      - assistant
+      - staff
+      - system
+      - order_update
+      - payment
+      type: string
+      description: |-
+        * `assistant` - Assistant
+        * `staff` - Staff
+        * `system` - System
+        * `order_update` - Order update
+        * `payment` - Payment
     User:
       type: object
       properties:
@@ -4273,6 +4553,40 @@ components:
         * `bicycle` - Bicycle
         * `car` - Car
         * `bajaji` - Bajaji
+    WhatsAppBlock:
+      type: object
+      properties:
+        number:
+          type: string
+        profile_name:
+          type: string
+        window_open:
+          type: boolean
+          description: Free text can be sent (last shopper message < 24 h ago).
+        window_closes_at:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+      - number
+      - profile_name
+      - window_closes_at
+      - window_open
+    WindowClosed:
+      type: object
+      properties:
+        code:
+          type: string
+        detail:
+          type: string
+        templates:
+          type: array
+          items:
+            type: string
+      required:
+      - code
+      - detail
+      - templates
   securitySchemes:
     jwtAuth:
       type: http

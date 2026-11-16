@@ -4,20 +4,41 @@ import logging
 from django.conf import settings
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import transaction
+from django.db.models import OuterRef, Subquery
 from django.http import HttpResponse, JsonResponse
+from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import status
+from rest_framework.generics import ListAPIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
+from apps.accounts.permissions import IsShopAdmin
+from apps.ai.models import ChatMessage, Conversation
 from apps.orders.services import normalize_phone
 
-from . import linking, parsing
-from .models import WhatsAppContact, WhatsAppInboundMessage as Inbound, WhatsAppOutboundMessage as Out
-from .serializers import DetailSerializer, LinkCodeSerializer, LinkStatusSerializer
+from . import linking, outbound, parsing, staff, texts
+from .models import (
+    WhatsAppContact,
+    WhatsAppInboundMessage as Inbound,
+    WhatsAppOrderNotification,
+    WhatsAppOutboundMessage as Out,
+)
+from .serializers import (
+    STAFF_TEMPLATES,
+    CodeSerializer,
+    DetailSerializer,
+    LinkCodeSerializer,
+    LinkStatusSerializer,
+    OutboundSerializer,
+    StaffReplyResultSerializer,
+    StaffReplySerializer,
+    WindowClosedSerializer,
+)
 from .signature import verify_signature, verify_token
 
 logger = logging.getLogger(__name__)
@@ -162,3 +183,72 @@ class LinkCodeView(APIView):
         except linking.NotConfigured:
             return Response({"detail": "WhatsApp is not configured."}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
         return Response(LinkCodeSerializer(body).data, status=status.HTTP_201_CREATED)
+
+
+# --- Staff tools (contracts/admin-api.md, US4) ----------------------------------------------------
+
+WINDOW_CLOSED_DETAIL = ("The shopper's last message was more than 24 hours ago. "
+                        "Only the approved follow-up template can be sent.")
+
+
+class StaffReplyView(APIView):
+    """Send a staff message to the shopper of a WhatsApp conversation. Free text needs the 24-hour
+    window; the follow-up template can be sent at any time. The conversation state is unchanged."""
+
+    permission_classes = [IsShopAdmin]
+
+    @extend_schema(tags=["whatsapp"], request=StaffReplySerializer,
+                   responses={202: StaffReplyResultSerializer, 400: CodeSerializer, 409: WindowClosedSerializer})
+    def post(self, request, pk):
+        conversation = get_object_or_404(Conversation, pk=pk)
+        data = StaffReplySerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        contact = staff.contact_for(conversation)
+        if contact is None:
+            return Response({"code": "not_whatsapp", "detail": "This is not a WhatsApp conversation."},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        Trigger = Out.Trigger
+        try:
+            with transaction.atomic():
+                if data.validated_data.get("template"):
+                    text = texts.text("follow_up", contact.language)
+                    rows = [outbound.queue_template(
+                        contact, settings.WHATSAPP_TEMPLATE_FOLLOW_UP, [], Trigger.STAFF, conversation,
+                        staff_user=request.user, text=text)]
+                else:
+                    text = data.validated_data["text"]
+                    rows = outbound.queue_text(contact, text, Trigger.STAFF, conversation, staff_user=request.user)
+                ChatMessage.objects.create(conversation=conversation, role=ChatMessage.Role.STAFF, text=text,
+                                           language=conversation.language,
+                                           payload={"whatsapp": {"staff_user": request.user.username}})
+                Conversation.objects.filter(pk=conversation.pk).update(updated_at=timezone.now())
+                outbound.flush(rows[0].batch)
+        except outbound.WindowClosed:
+            return Response({"code": "window_closed", "detail": WINDOW_CLOSED_DETAIL, "templates": STAFF_TEMPLATES},
+                            status=status.HTTP_409_CONFLICT)
+        return Response({"outbound_id": rows[0].pk, "status": rows[0].status}, status=status.HTTP_202_ACCEPTED)
+
+
+@extend_schema(tags=["whatsapp"], parameters=[
+    OpenApiParameter("status", str, enum=Out.Status.values, description="Only messages in this state."),
+    OpenApiParameter("contact", int, description="Only messages to this contact id."),
+])
+class OutboundListView(ListAPIView):
+    """Messages sent (or not) to shoppers; ?status=failed finds failed sends and order updates."""
+
+    permission_classes = [IsShopAdmin]
+    serializer_class = OutboundSerializer
+
+    def get_queryset(self):
+        order_number = (WhatsAppOrderNotification.objects.filter(outbound=OuterRef("pk"))
+                        .values("order__number")[:1])
+        qs = (Out.objects.select_related("contact").annotate(order_number=Subquery(order_number))
+              .order_by("-created_at", "-id"))
+        params = self.request.query_params
+        if params.get("status"):
+            qs = qs.filter(status=params["status"])
+        if params.get("contact"):
+            contact = params["contact"]
+            qs = qs.filter(contact_id=int(contact)) if contact.isdigit() else qs.none()
+        return qs

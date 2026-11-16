@@ -1,6 +1,9 @@
+from datetime import timedelta
 from pathlib import Path
 
 from django.conf import settings
+from django.utils import timezone
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from apps.orders.serializers import CartSerializer
@@ -133,14 +136,36 @@ class AdminMessageSerializer(serializers.ModelSerializer):
                   "steps", "latency_ms", "error", "created_at"]
 
 
+class WhatsAppBlockSerializer(serializers.Serializer):
+    number = serializers.CharField()
+    profile_name = serializers.CharField()
+    window_open = serializers.BooleanField(help_text="Free text can be sent (last shopper message < 24 h ago).")
+    window_closes_at = serializers.DateTimeField(allow_null=True)
+
+
+WHATSAPP_WINDOW = timedelta(hours=24)
+
+
 class AdminConversationSerializer(serializers.ModelSerializer):
     user = serializers.SlugRelatedField(slug_field="username", read_only=True)
     last_message = serializers.CharField(read_only=True, allow_null=True, default=None)
+    whatsapp = serializers.SerializerMethodField()
 
     class Meta:
         model = Conversation
         fields = ["id", "channel", "state", "language", "handoff_reason", "user", "created_at", "updated_at",
-                  "last_message"]
+                  "last_message", "whatsapp"]
+
+    @extend_schema_field(WhatsAppBlockSerializer(allow_null=True))
+    def get_whatsapp(self, conversation):
+        """The shopper's number for WhatsApp conversations (annotated by the admin view), else null."""
+        number = getattr(conversation, "wa_number", None)
+        if not number:
+            return None
+        last = conversation.wa_last_inbound_at
+        closes = last + WHATSAPP_WINDOW if last else None
+        return {"number": number, "profile_name": conversation.wa_profile_name or "",
+                "window_open": bool(closes and closes > timezone.now()), "window_closes_at": closes}
 
 
 class AdminConversationDetailSerializer(AdminConversationSerializer):

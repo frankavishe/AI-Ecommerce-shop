@@ -42,3 +42,15 @@ def deliver_inbound(client, django_capture_on_commit_callbacks):
 
     return post
 
+
+
+@pytest.fixture
+def speech():
+    """A scripted speech-to-text backend (FakeSpeech)."""
+    from apps.ai import clients
+    from apps.ai.testing import FakeSpeech
+
+    fake = FakeSpeech()
+    clients.use_fakes(speech=fake)
+    yield fake
+    clients.use_fakes(speech=None)

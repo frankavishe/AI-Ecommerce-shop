@@ -187,21 +187,30 @@ class ReindexView(APIView):
         return Response(data.validated_data, status=status.HTTP_202_ACCEPTED)
 
 
-@extend_schema(parameters=[OpenApiParameter("state", str, enum=Conversation.State.values,
-                                            description="Only conversations in this state.")])
+@extend_schema(parameters=[
+    OpenApiParameter("state", str, enum=Conversation.State.values, description="Only conversations in this state."),
+    OpenApiParameter("channel", str, enum=Conversation.Channel.values,
+                     description="Only conversations from this channel."),
+])
 class AdminConversationViewSet(viewsets.ReadOnlyModelViewSet):
     """Assistant conversations, e.g. the ones handed to staff (state=needs_human)."""
 
     permission_classes = [IsShopAdmin]
 
     def get_queryset(self):
+        from apps.whatsapp.staff import annotate_contacts  # lazy: whatsapp depends on ai
+
         last_text = (ChatMessage.objects.filter(conversation=OuterRef("pk"))
                      .order_by("-created_at", "-id").values("text")[:1])
         qs = (Conversation.objects.select_related("user").annotate(last_message=Subquery(last_text))
               .order_by("-updated_at"))
+        qs = annotate_contacts(qs)
         state = self.request.query_params.get("state")
         if state:
             qs = qs.filter(state=state)
+        channel = self.request.query_params.get("channel")
+        if channel:
+            qs = qs.filter(channel=channel)
         if self.action == "retrieve":
             qs = qs.prefetch_related("messages")
         return qs

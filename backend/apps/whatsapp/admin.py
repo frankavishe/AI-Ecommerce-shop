@@ -1,6 +1,12 @@
 from django.contrib import admin
 
-from .models import WhatsAppContact, WhatsAppInboundMessage, WhatsAppOutboundMessage
+from .models import (
+    WhatsAppContact,
+    WhatsAppInboundMessage,
+    WhatsAppLinkCode,
+    WhatsAppOrderNotification,
+    WhatsAppOutboundMessage,
+)
 
 
 class ReadOnlyAdmin(admin.ModelAdmin):
@@ -35,3 +41,19 @@ class WhatsAppOutboundMessageAdmin(ReadOnlyAdmin):
     list_filter = ["status", "kind", "trigger"]
     search_fields = ["wa_message_id", "contact__phone", "text"]
     list_select_related = ["contact"]
+
+
+@admin.register(WhatsAppOrderNotification)
+class WhatsAppOrderNotificationAdmin(ReadOnlyAdmin):
+    list_display = ["order", "status", "state", "outbound", "created_at"]
+    list_filter = ["state", "status"]
+    search_fields = ["order__number"]
+    list_select_related = ["order", "outbound"]
+
+
+@admin.register(WhatsAppLinkCode)
+class WhatsAppLinkCodeAdmin(ReadOnlyAdmin):
+    list_display = ["user", "expires_at", "used_at", "used_by", "created_at"]
+    exclude = ["code_hash"]  # never shown: it is enough to redeem a code
+    search_fields = ["user__username"]
+    list_select_related = ["user", "used_by"]
