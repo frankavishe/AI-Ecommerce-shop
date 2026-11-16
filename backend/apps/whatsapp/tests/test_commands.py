@@ -113,3 +113,13 @@ def test_voice_eval_scores_per_language(voice_cases, speech, chat_model, shoe_ca
 def test_voice_eval_needs_cases(tmp_path):
     with pytest.raises(CommandError, match="cases.json"):
         call_command("whatsapp_voice_eval", "--dir", str(tmp_path))
+
+
+def test_logging_graph_ids_are_unique_across_instances(debug, contact_factory):
+    """A restarted dev server must not reuse wamids already stored (wa_message_id is unique)."""
+    from apps.whatsapp import graph as module
+
+    first, second = module.LoggingGraph(), module.LoggingGraph()
+    body = {"to": "255742000331", "type": "text", "text": {"body": "hi"}}
+    assert first.send(body) != second.send(body)
+    assert first.upload_media(b"x", "image/png") != second.upload_media(b"x", "image/png")

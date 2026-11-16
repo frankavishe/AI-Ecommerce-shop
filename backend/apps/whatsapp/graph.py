@@ -4,10 +4,10 @@ Everything else calls get_client(), which tests replace with use_fake(FakeGraph(
 WHATSAPP_FAKE_GRAPH set in DEBUG, a LoggingGraph logs the payloads instead of calling Meta.
 """
 
-import itertools
 import json
 import logging
 import mimetypes
+import uuid
 from pathlib import Path
 
 import httpx
@@ -115,7 +115,6 @@ class LoggingGraph:
     """DEBUG stand-in that logs sends and serves media registered by whatsapp_simulate."""
 
     def __init__(self):
-        self._n = itertools.count(1)
         self.media = {}  # media_id -> (bytes, mime)
 
     def add_media(self, media_id, content, mime):
@@ -131,7 +130,7 @@ class LoggingGraph:
         return b"", "application/octet-stream"
 
     def send(self, body):
-        wamid = f"wamid.LOG{next(self._n)}"
+        wamid = f"wamid.LOG{uuid.uuid4().hex}"  # unique across restarts (wa_message_id is unique)
         logger.warning("WhatsApp (fake) send %s: %s", wamid, json.dumps(body, ensure_ascii=False))
         return wamid
 
@@ -143,7 +142,7 @@ class LoggingGraph:
         return self._media(url.removeprefix("fake://"))[0]
 
     def upload_media(self, content, mime):
-        media_id = f"media.LOG{next(self._n)}"
+        media_id = f"media.LOG{uuid.uuid4().hex}"
         logger.warning("WhatsApp (fake) upload %s (%s, %d bytes)", media_id, mime, len(content))
         return media_id
 
