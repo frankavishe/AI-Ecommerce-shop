@@ -501,7 +501,7 @@ nothing.
 
 ### Tests (write first, must fail)
 
-- [ ] T052 [P] [US5] Write `backend/apps/whatsapp/tests/test_notifications.py`:
+- [X] T052 [P] [US5] Write `backend/apps/whatsapp/tests/test_notifications.py`:
   - A paid order through `payments.services.apply_provider_status` → one `order_paid` template
     with the DB number and total (US5-1, FR-022). Replaying the payment webhook 5 times → still
     one (US5-3, SC-002).
@@ -516,11 +516,11 @@ nothing.
 
 ### Implementation
 
-- [ ] T053 [US5] Implement `backend/apps/whatsapp/notifications.py`. A `post_save` receiver on
+- [X] T053 [US5] Implement `backend/apps/whatsapp/notifications.py`. A `post_save` receiver on
   `orders.OrderEvent` (created, not raw, status in the five) runs
   `transaction.on_commit(notify_order_status.delay(order_id, status))`. It is connected in
   `apps.py` with a `dispatch_uid`.
-- [ ] T054 [US5] Implement `notify_order_status(order_id, status)` in
+- [X] T054 [US5] Implement `notify_order_status(order_id, status)` in
   `backend/apps/whatsapp/tasks.py` (research R14):
   - No `WhatsAppOrder` → return.
   - `get_or_create` the `WhatsAppOrderNotification` → if it already exists, return.
@@ -529,7 +529,7 @@ nothing.
     `[order.number, format_tzs(order.total)]` (paid) or `[order.number]`, link the outbound row,
     and leave the notification `state=sending`. `deliver_batch` (T017) moves it to `sent` or
     `failed`.
-- [ ] T055 [US5] Add the STOP and START control words (`stop|acha|sitaki|unsubscribe`,
+- [X] T055 [US5] Add the STOP and START control words (`stop|acha|sitaki|unsubscribe`,
   `start|anza`; trimmed, case-insensitive, whole message) to the control-word step of
   `backend/apps/whatsapp/processing.py`, with the `stopped` and `started` replies.
 

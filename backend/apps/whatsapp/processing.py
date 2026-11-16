@@ -405,6 +405,27 @@ def record_for_staff(job):
     return S.RECORDED, ""
 
 
+# --- Order-update opt-out (FR-021, research R14) ---------------------------------------------------
+
+STOP_WORDS = {"stop", "acha", "sitaki", "unsubscribe"}
+START_WORDS = {"start", "anza"}
+
+
+def updates_control(job):
+    """CONTROL_HANDLERS step: a text that is exactly STOP/acha/... or START/anza switches order
+    updates and is answered by the server, never by the assistant."""
+    if job.inbound.type != Inbound.Type.TEXT:
+        return None
+    word = (job.inbound.text or "").strip().lower()
+    if word not in STOP_WORDS | START_WORDS:
+        return None
+    allowed = word in START_WORDS
+    if job.contact.updates_allowed != allowed:
+        job.contact.updates_allowed = allowed
+        job.contact.save(update_fields=["updates_allowed", "updated_at"])
+    return reply_fixed(job, "started" if allowed else "stopped", S.ANSWERED)
+
+
 TYPE_HANDLERS = {
     Inbound.Type.TEXT: handle_text,
     Inbound.Type.IMAGE: handle_image,
@@ -413,7 +434,7 @@ TYPE_HANDLERS = {
 }
 
 # Extension points: control words (before the assistant), after-turn bookkeeping, reply extras.
-CONTROL_HANDLERS = []
+CONTROL_HANDLERS = [updates_control]
 AFTER_TURN = []
 REPLY_EXTRAS = []
 
