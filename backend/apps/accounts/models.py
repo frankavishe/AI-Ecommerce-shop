@@ -59,6 +59,10 @@ class RiderProfile(models.Model):
     plate_number = models.CharField(max_length=20, blank=True)
     zone = models.CharField(max_length=80, blank=True, help_text="Area the rider covers")
     is_available = models.BooleanField(default=True)
+    # 005: the delivery regions this rider covers (replaces the free-text zone, kept as legacy_zone)
+    regions = models.ManyToManyField("orders.DeliveryRegion", blank=True, related_name="riders")
+    last_assigned_at = models.DateTimeField(null=True, blank=True)
+    welcome_sent_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

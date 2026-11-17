@@ -27,11 +27,11 @@ rider-tools.md, notifications.md, customer-and-account.md), quickstart.md
 
 ## Phase 1: Setup
 
-- [ ] T001 Create the app skeleton `backend/apps/delivery/`:
+- [X] T001 Create the app skeleton `backend/apps/delivery/`:
   - Files: `__init__.py`; `apps.py` (`DeliveryConfig`, `name="apps.delivery"`, with a `ready()` that for now imports only `signals`); empty `models.py`, `urls.py`, `tests/__init__.py`, `management/__init__.py`, `management/commands/__init__.py`; and `eval/.gitkeep`.
   - Add `"apps.delivery"` to `INSTALLED_APPS` in `backend/config/settings.py`, after `apps.whatsapp`.
   - Add `path("api/", include("apps.delivery.urls"))` in `backend/config/urls.py`.
-- [ ] T002 [P] Add these settings to `backend/config/settings.py`, read from env with these defaults:
+- [X] T002 [P] Add these settings to `backend/config/settings.py`, read from env with these defaults:
   - `WEB_BASE_URL="http://localhost:3000"`, `RIDER_SETUP_TOKEN_HOURS=72`, `DELIVERY_WAITING_ALERT_MINUTES=15`.
   - Templates:
     - `WHATSAPP_TEMPLATE_RIDER_WELCOME="rider_welcome"`
@@ -41,7 +41,7 @@ rider-tools.md, notifications.md, customer-and-account.md), quickstart.md
     - `WHATSAPP_TEMPLATE_ORDER_ON_THE_WAY_RIDER="order_on_the_way_rider"`
     - `WHATSAPP_TEMPLATE_DELIVERY_FAILED="order_delivery_failed"`
   - Throttle rate `"set_password": "10/hour"`.
-- [ ] T003 [P] Add the T002 variables to `.env.example`, with comments. Include the suggested Swahili template bodies from `contracts/notifications.md` as a comment block.
+- [X] T003 [P] Add the T002 variables to `.env.example`, with comments. Include the suggested Swahili template bodies from `contracts/notifications.md` as a comment block.
 
 ---
 
@@ -51,7 +51,7 @@ rider-tools.md, notifications.md, customer-and-account.md), quickstart.md
 
 ### Models and migrations
 
-- [ ] T004 Write `backend/apps/delivery/models.py` exactly per `data-model.md`:
+- [X] T004 Write `backend/apps/delivery/models.py` exactly per `data-model.md`:
   - **`Delivery`**:
     - `order`: OneToOne → `orders.Order`, PROTECT, `related_name="delivery"`.
     - `status`: char(12), TextChoices `waiting · assigned · picked_up · on_the_way · delivered · failed · cancelled`, default `waiting`.
@@ -94,18 +94,18 @@ rider-tools.md, notifications.md, customer-and-account.md), quickstart.md
     - `updated_at`.
     - `updated_by`: FK User, null.
     - Classmethod `get()` returns `get_or_create(pk=1)`.
-- [ ] T005 Create `backend/apps/delivery/migrations/0001_initial.py` with `makemigrations delivery`. Add a `RunPython` step that creates the `DeliverySettings(pk=1)` row.
-- [ ] T006 [P] Extend `RiderProfile` in `backend/apps/accounts/models.py`:
+- [X] T005 Create `backend/apps/delivery/migrations/0001_initial.py` with `makemigrations delivery`. Add a `RunPython` step that creates the `DeliverySettings(pk=1)` row.
+- [X] T006 [P] Extend `RiderProfile` in `backend/apps/accounts/models.py`:
   - `regions`: M2M → `orders.DeliveryRegion`, `related_name="riders"`, blank.
   - `last_assigned_at`: datetime, null.
   - `welcome_sent_at`: datetime, null.
   - Keep `zone`.
   - Generate the schema migration, then add a data migration in `backend/apps/accounts/migrations/` that copies a case-insensitive `zone` match into `regions`.
-- [ ] T007 [P] Register `Delivery` (with an inline for `DeliveryEvent`), `DeliveryNotification`, `RiderInboxEntry` and `DeliverySettings` in `backend/apps/delivery/admin.py`. They are read-mostly.
+- [X] T007 [P] Register `Delivery` (with an inline for `DeliveryEvent`), `DeliveryNotification`, `RiderInboxEntry` and `DeliverySettings` in `backend/apps/delivery/admin.py`. They are read-mostly.
 
 ### Core service (R4, R9)
 
-- [ ] T008 Write the foundational tests in `backend/apps/delivery/tests/test_lifecycle.py`, plus fixtures in `backend/apps/delivery/tests/conftest.py`:
+- [X] T008 Write the foundational tests in `backend/apps/delivery/tests/test_lifecycle.py`, plus fixtures in `backend/apps/delivery/tests/conftest.py`:
   - **Fixtures**: `region` (Kinondoni); `rider` (role=rider, phone `+255700000001`, profile covering the region); `rider2`; `paid_order` (moved to paid through `orders.services.transition`); `admin_user`.
   - **Tests**:
     - Every allowed move in the data-model transition table succeeds and writes one `DeliveryEvent` with attempt, rider, actor_type and note.
@@ -116,13 +116,13 @@ rider-tools.md, notifications.md, customer-and-account.md), quickstart.md
     - assigned→delivered records `picked_up` then `delivered`.
     - Retry from `failed` increments `attempt` and clears rider and `failure_reason`.
     - The check constraint refuses `assigned` with no rider.
-- [ ] T009 Write the order-sync tests in `backend/apps/delivery/tests/test_order_sync.py`:
+- [X] T009 Write the order-sync tests in `backend/apps/delivery/tests/test_order_sync.py`:
   - Assign moves a `paid` order to `processing` and leaves a `processing` one alone.
   - picked_up moves the order to `out_for_delivery`; on_the_way leaves it there.
   - delivered moves the order to `delivered`.
   - failed and retry leave the order unchanged.
   - Each order transition produces exactly one `OrderEvent`.
-- [ ] T010 Implement `backend/apps/delivery/services.py`:
+- [X] T010 Implement `backend/apps/delivery/services.py`:
   - Exceptions: `DeliveryError(code)` with subclasses `InvalidDeliveryTransition`, `StaleDelivery`, `ReasonRequired`, `RiderUnavailable`.
   - A `TRANSITIONS` table copied from data-model.md.
   - **`change(delivery, to, actor, *, actor_type, rider=None, note="", expect=None) -> Result(status, recorded: list, already: bool)`**:
@@ -139,7 +139,7 @@ rider-tools.md, notifications.md, customer-and-account.md), quickstart.md
     - `create_for_order(order) -> (delivery, created)`: `get_or_create`.
     - `cancel_for_order(order, actor=None)`.
   - Make T008–T009 pass.
-- [ ] T011 [P] Write `backend/apps/delivery/riders.py`:
+- [X] T011 [P] Write `backend/apps/delivery/riders.py`:
   - `active_riders()`: a queryset of `role=rider`, `is_active`, with a profile.
   - `assignable_riders()`: `active_riders()` filtered to `profile.is_available`.
   - `open_jobs(rider)`: a count of ACTIVE deliveries.

@@ -32,6 +32,7 @@ INSTALLED_APPS = [
     "apps.payments",
     "apps.ai",
     "apps.whatsapp",
+    "apps.delivery",
 ]
 
 MIDDLEWARE = [
@@ -118,7 +119,7 @@ REST_FRAMEWORK = {
     "PAGE_SIZE": 24,
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "DEFAULT_THROTTLE_RATES": {"ai_chat": "20/min", "ai_conversation": "10/min",
-                               "whatsapp_link_code": "5/hour"},
+                               "whatsapp_link_code": "5/hour", "set_password": "10/hour"},
 }
 
 SIMPLE_JWT = {
@@ -217,6 +218,13 @@ WHATSAPP_TEMPLATE_ORDER_DELIVERED = env("WHATSAPP_TEMPLATE_ORDER_DELIVERED", def
 WHATSAPP_TEMPLATE_ORDER_CANCELLED = env("WHATSAPP_TEMPLATE_ORDER_CANCELLED", default="order_cancelled")
 WHATSAPP_TEMPLATE_ORDER_EXPIRED = env("WHATSAPP_TEMPLATE_ORDER_EXPIRED", default="order_expired")
 WHATSAPP_TEMPLATE_FOLLOW_UP = env("WHATSAPP_TEMPLATE_FOLLOW_UP", default="follow_up")
+# 005 delivery + riders (contracts/notifications.md)
+WHATSAPP_TEMPLATE_RIDER_WELCOME = env("WHATSAPP_TEMPLATE_RIDER_WELCOME", default="rider_welcome")
+WHATSAPP_TEMPLATE_DELIVERY_ASSIGNED = env("WHATSAPP_TEMPLATE_DELIVERY_ASSIGNED", default="delivery_assigned")
+WHATSAPP_TEMPLATE_DELIVERY_REMOVED = env("WHATSAPP_TEMPLATE_DELIVERY_REMOVED", default="delivery_removed")
+WHATSAPP_TEMPLATE_DELIVERY_CANCELLED = env("WHATSAPP_TEMPLATE_DELIVERY_CANCELLED", default="delivery_cancelled")
+WHATSAPP_TEMPLATE_ORDER_ON_THE_WAY_RIDER = env("WHATSAPP_TEMPLATE_ORDER_ON_THE_WAY_RIDER", default="order_on_the_way_rider")
+WHATSAPP_TEMPLATE_DELIVERY_FAILED = env("WHATSAPP_TEMPLATE_DELIVERY_FAILED", default="order_delivery_failed")
 WHATSAPP_RATE_PER_MINUTE = env.int("WHATSAPP_RATE_PER_MINUTE", default=10)
 WHATSAPP_RATE_PER_DAY = env.int("WHATSAPP_RATE_PER_DAY", default=200)
 WHATSAPP_RESET_DAYS = env.int("WHATSAPP_RESET_DAYS", default=7)
@@ -227,3 +235,8 @@ WHATSAPP_MAX_PRODUCT_PHOTOS = env.int("WHATSAPP_MAX_PRODUCT_PHOTOS", default=3)
 # DEBUG only: log outbound payloads instead of calling Meta (quickstart section 2).
 WHATSAPP_FAKE_GRAPH = env.bool("WHATSAPP_FAKE_GRAPH", default=False)
 WHATSAPP_LOCK_NAMESPACE = env.int("WHATSAPP_LOCK_NAMESPACE", default=4004)
+
+# --- Delivery + riders (specs/005-delivery-riders) ---
+WEB_BASE_URL = env("WEB_BASE_URL", default="http://localhost:3000")
+RIDER_SETUP_TOKEN_HOURS = env.int("RIDER_SETUP_TOKEN_HOURS", default=72)
+DELIVERY_WAITING_ALERT_MINUTES = env.int("DELIVERY_WAITING_ALERT_MINUTES", default=15)
