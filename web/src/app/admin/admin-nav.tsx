@@ -1,6 +1,6 @@
 "use client";
 
-import { ExternalLink, LayoutDashboard, Loader2, LogOut, MapPinned, Package, ReceiptText, Tags } from "lucide-react";
+import { Bike, ExternalLink, LayoutDashboard, Loader2, LogOut, MapPinned, Package, ReceiptText, Tags } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useLogout, useSession } from "@/lib/queries/session";
@@ -13,6 +13,7 @@ const LINKS = [
   { href: "/admin/products", label: "Products", Icon: Package },
   { href: "/admin/categories", label: "Categories", Icon: Tags },
   { href: "/admin/orders", label: "Orders", Icon: ReceiptText },
+  { href: "/admin/deliveries", label: "Deliveries", Icon: Bike },
   { href: "/admin/delivery-regions", label: "Delivery regions", Icon: MapPinned },
 ] as const;
 

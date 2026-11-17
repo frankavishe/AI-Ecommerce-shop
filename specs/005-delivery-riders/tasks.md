@@ -216,23 +216,23 @@ rider-tools.md, notifications.md, customer-and-account.md), quickstart.md
   - `create-from-order` view at `admin/orders/<number>/delivery/`.
   - Make T013 and T016 pass.
 - [X] T022 [US1] Add the guard in `backend/apps/orders/views.py`: `AdminOrderViewSet`'s status action refuses `out_for_delivery`/`delivered` with 409 `use_deliveries` when `hasattr(order, "delivery")`. Use a `try` on `Delivery.DoesNotExist` via the related accessor, with no import of `apps.delivery` at module level. Make T015 pass, and check that the 001/002 order tests stay green.
-- [ ] T023 [US1] Regenerate the web API types: `npm run gen:api` in `web/`, updating `web/src/lib/api/schema.d.ts`.
-- [ ] T024 [P] [US1] Write `web/src/lib/queries/delivery.ts`. Use TanStack Query hooks through the bff, in the same style as `web/src/lib/queries/admin.ts`:
+- [X] T023 [US1] Regenerate the web API types: `npm run gen:api` in `web/`, updating `web/src/lib/api/schema.d.ts`.
+- [X] T024 [P] [US1] Write `web/src/lib/queries/delivery.ts`. Use TanStack Query hooks through the bff, in the same style as `web/src/lib/queries/admin.ts`:
   - Queries: `useDeliveries(filters)`, `useDelivery(id)`, `useCandidates(id)`.
   - Mutations: `useAssign`, `useUnassign`, `useDeliveryStatus`, `useCreateDelivery(number)`.
   - Invalidate the list and the detail on success; surface `stale` by refetching.
-- [ ] T025 [P] [US1] Add sw/en strings in `web/src/i18n/sw.ts` and `web/src/i18n/en.ts`:
+- [X] T025 [P] [US1] (Done as English-only labels in `web/src/lib/delivery-status.ts`: the admin is English-only and reads `en` directly, see `components/admin/ui.tsx`.) Add sw/en strings in `web/src/i18n/sw.ts` and `web/src/i18n/en.ts`:
   - `admin.deliveries.*`: list headings, the status labels for all 7 statuses, filters, attention badge, assign dialog, unassign, status override, create-delivery, the errors `stale`/`rider_unavailable`/`invalid_transition`/`use_deliveries`.
   - The nav labels.
-- [ ] T026 [US1] Build `web/src/app/admin/deliveries/page.tsx`: a list with status, region and rider filters; failed and long-waiting rows highlighted; links to detail. Follow the `web/src/app/admin/orders/page.tsx` layout.
-- [ ] T027 [US1] Build `web/src/app/admin/deliveries/[id]/page.tsx` plus client components (`delivery-detail.tsx`, `assign-dialog.tsx`):
+- [X] T026 [US1] Build `web/src/app/admin/deliveries/page.tsx`: a list with status, region and rider filters; failed and long-waiting rows highlighted; links to detail. Follow the `web/src/app/admin/orders/page.tsx` layout.
+- [X] T027 [US1] Build `web/src/app/admin/deliveries/[id]/page.tsx` plus client components (`delivery-detail.tsx`, `assign-dialog.tsx`):
   - Order summary and timeline of events.
   - The assign dialog lists candidates with region riders first, open jobs and availability; it disables unavailable riders and sends `expected_status`/`expected_rider`.
   - Unassign, and a status override with a required note for failed.
-- [ ] T028 [US1] Add Deliveries to `web/src/app/admin/admin-nav.tsx`. In `web/src/app/admin/orders/[number]/order-detail.tsx`:
+- [X] T028 [US1] Add Deliveries to `web/src/app/admin/admin-nav.tsx`. In `web/src/app/admin/orders/[number]/order-detail.tsx`:
   - Link to the order's delivery when it exists, or show a "create delivery" button for paid/processing orders without one.
   - Show the `use_deliveries` error message.
-- [ ] T029 [US1] Write `web/e2e/admin-deliveries.spec.ts` (Playwright, :3100 e2e stack): seed a paid order and a rider via `web/e2e/seed.py`, open `/admin/deliveries`, assign the rider, and see the status as assigned. Extend `seed.py` with a rider plus region if needed.
+- [X] T029 [US1] Write `web/e2e/admin-deliveries.spec.ts` (Playwright, :3100 e2e stack): seed a paid order and a rider via `web/e2e/seed.py`, open `/admin/deliveries`, assign the rider, and see the status as assigned. Extend `seed.py` with a rider plus region if needed.
 
 **Checkpoint**: US1 works end to end with seeded riders. `pytest apps/delivery apps/orders` is green, and so are web lint, typecheck and the e2e spec.
 

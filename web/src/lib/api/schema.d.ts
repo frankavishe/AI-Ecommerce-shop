@@ -4,6 +4,108 @@
  */
 
 export interface paths {
+    "/api/admin/deliveries/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Render service-layer ShopErrors as {"detail", "code", ...extra}. */
+        get: operations["api_admin_deliveries_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/deliveries/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Render service-layer ShopErrors as {"detail", "code", ...extra}. */
+        get: operations["api_admin_deliveries_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/deliveries/{id}/assign/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Render service-layer ShopErrors as {"detail", "code", ...extra}. */
+        post: operations["api_admin_deliveries_assign_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/deliveries/{id}/candidates/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Riders for the assign dialog (FR-007): region riders first, then the least busy. */
+        get: operations["api_admin_deliveries_candidates_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/deliveries/{id}/status/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Admin override when the rider can't use the phone. */
+        post: operations["api_admin_deliveries_status_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/deliveries/{id}/unassign/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Render service-layer ShopErrors as {"detail", "code", ...extra}. */
+        post: operations["api_admin_deliveries_unassign_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/delivery-regions/": {
         parameters: {
             query?: never;
@@ -64,6 +166,23 @@ export interface paths {
         get: operations["api_admin_orders_retrieve"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/orders/{number}/delivery/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description FR-005: a delivery for an order paid before this feature existed. */
+        post: operations["api_admin_orders_delivery_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -809,6 +928,13 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * @description * `admin` - Admin
+         *     * `rider` - Rider
+         *     * `system` - System
+         * @enum {string}
+         */
+        ActorTypeEnum: "admin" | "rider" | "system";
         AddItemRequest: {
             product_id: number;
             /** @default 1 */
@@ -987,6 +1113,21 @@ export interface components {
             /** Format: date-time */
             readonly updated_at: string;
         };
+        AssignRequest: {
+            rider: number;
+            expected_status?: (components["schemas"]["DeliveryStatusEnum"] | components["schemas"]["NullEnum"]) | null;
+            expected_rider?: number | null;
+        };
+        Candidate: {
+            id: number;
+            readonly name: string;
+            phone: string;
+            vehicle: string;
+            readonly regions: string[];
+            is_available: boolean;
+            open_jobs: number;
+            covers_region: boolean;
+        };
         /** @description Renders services.cart_totals(cart). */
         Cart: {
             token: string;
@@ -1120,6 +1261,79 @@ export interface components {
          * @enum {string}
          */
         ConversationStateEnum: "active" | "needs_human";
+        DeliveryDetail: {
+            readonly id: number;
+            readonly status: components["schemas"]["DeliveryStatusEnum"];
+            readonly attempt: number;
+            readonly attention: boolean;
+            readonly order: components["schemas"]["DeliveryOrder"];
+            readonly rider: components["schemas"]["RiderBrief"] | null;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly updated_at: string;
+            readonly events: components["schemas"]["DeliveryEvent"][];
+            readonly notifications: components["schemas"]["DeliveryNotification"][];
+            readonly failure_reason: string;
+        };
+        DeliveryEvent: {
+            readonly status: components["schemas"]["DeliveryStatusEnum"];
+            readonly attempt: number;
+            readonly rider: string | null;
+            readonly actor_type: components["schemas"]["ActorTypeEnum"];
+            readonly actor_name: string | null;
+            readonly note: string;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        DeliveryList: {
+            readonly id: number;
+            readonly status: components["schemas"]["DeliveryStatusEnum"];
+            readonly attempt: number;
+            readonly attention: boolean;
+            readonly order: components["schemas"]["DeliveryOrder"];
+            readonly rider: components["schemas"]["RiderBrief"] | null;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly updated_at: string;
+        };
+        DeliveryNotification: {
+            readonly kind: components["schemas"]["DeliveryNotificationKindEnum"];
+            readonly attempt: number;
+            readonly state: components["schemas"]["DeliveryNotificationStateEnum"];
+            readonly outbound_status: string | null;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        /**
+         * @description * `rider_welcome` - Rider welcome
+         *     * `rider_assigned` - Job assigned
+         *     * `rider_removed` - Job removed
+         *     * `rider_cancelled` - Job cancelled
+         *     * `customer_failed` - Customer: couldn't deliver
+         * @enum {string}
+         */
+        DeliveryNotificationKindEnum: "rider_welcome" | "rider_assigned" | "rider_removed" | "rider_cancelled" | "customer_failed";
+        /**
+         * @description * `queued` - Queued
+         *     * `skipped` - Skipped
+         *     * `failed` - Failed
+         * @enum {string}
+         */
+        DeliveryNotificationStateEnum: "queued" | "skipped" | "failed";
+        DeliveryOrder: {
+            number: string;
+            region: string;
+            street: string;
+            contact_name: string;
+            readonly item_count: number;
+            /** Format: decimal */
+            total: string;
+            /** Format: date-time */
+            paid_at: string | null;
+            status: string;
+        };
         DeliveryRegion: {
             name: string;
             /** Format: decimal */
@@ -1130,6 +1344,17 @@ export interface components {
             /** Format: decimal */
             default_fee: string;
         };
+        /**
+         * @description * `waiting` - Waiting for a rider
+         *     * `assigned` - Assigned
+         *     * `picked_up` - Picked up
+         *     * `on_the_way` - On the way
+         *     * `delivered` - Delivered
+         *     * `failed` - Failed
+         *     * `cancelled` - Cancelled
+         * @enum {string}
+         */
+        DeliveryStatusEnum: "waiting" | "assigned" | "picked_up" | "on_the_way" | "delivered" | "failed" | "cancelled";
         Detail: {
             detail: string;
         };
@@ -1226,6 +1451,8 @@ export interface components {
          * @enum {string}
          */
         MobileMoneyNetworkEnum: "Mpesa" | "AirtelMoney" | "TigoPesa" | "HaloPesa";
+        /** @enum {unknown} */
+        NullEnum: null;
         Order: {
             readonly number: string;
             readonly status: components["schemas"]["OrderStatusEnum"];
@@ -1406,6 +1633,21 @@ export interface components {
              */
             previous?: string | null;
             results: components["schemas"]["Category"][];
+        };
+        PaginatedDeliveryListList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["DeliveryList"][];
         };
         PaginatedKnowledgeDocumentList: {
             /** @example 123 */
@@ -1743,6 +1985,12 @@ export interface components {
             /** Format: date-time */
             readonly created_at: string;
         };
+        RiderBrief: {
+            id: number;
+            readonly name: string;
+            phone: string;
+            readonly vehicle: string | null;
+        };
         /** @description Admin-facing: create and manage riders (user + profile in one payload). */
         RiderRequest: {
             username: string;
@@ -1789,6 +2037,20 @@ export interface components {
             /** @default  */
             note: string;
         };
+        StatusRequest: {
+            status: components["schemas"]["StatusStatusEnum"];
+            /** @default  */
+            note: string;
+            expected_status?: (components["schemas"]["DeliveryStatusEnum"] | components["schemas"]["NullEnum"]) | null;
+        };
+        /**
+         * @description * `picked_up` - picked_up
+         *     * `on_the_way` - on_the_way
+         *     * `delivered` - delivered
+         *     * `failed` - failed
+         * @enum {string}
+         */
+        StatusStatusEnum: "picked_up" | "on_the_way" | "delivered" | "failed";
         /**
          * @description * `follow_up` - follow_up
          * @enum {string}
@@ -1810,6 +2072,9 @@ export interface components {
          * @enum {string}
          */
         TriggerEnum: "assistant" | "staff" | "system" | "order_update" | "payment";
+        UnassignRequest: {
+            expected_rider?: number | null;
+        };
         User: {
             readonly id: number;
             /** @description Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only. */
@@ -1876,6 +2141,162 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    api_admin_deliveries_list: {
+        parameters: {
+            query?: {
+                attention?: boolean;
+                /** @description Order number */
+                order?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                region?: string;
+                rider?: number;
+                status?: ("assigned" | "cancelled" | "delivered" | "failed" | "on_the_way" | "picked_up" | "waiting")[];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedDeliveryListList"];
+                };
+            };
+        };
+    };
+    api_admin_deliveries_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A unique integer value identifying this delivery. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeliveryDetail"];
+                };
+            };
+        };
+    };
+    api_admin_deliveries_assign_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A unique integer value identifying this delivery. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AssignRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["AssignRequest"];
+                "multipart/form-data": components["schemas"]["AssignRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeliveryDetail"];
+                };
+            };
+        };
+    };
+    api_admin_deliveries_candidates_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A unique integer value identifying this delivery. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Candidate"][];
+                };
+            };
+        };
+    };
+    api_admin_deliveries_status_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A unique integer value identifying this delivery. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StatusRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["StatusRequest"];
+                "multipart/form-data": components["schemas"]["StatusRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeliveryDetail"];
+                };
+            };
+        };
+    };
+    api_admin_deliveries_unassign_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A unique integer value identifying this delivery. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["UnassignRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["UnassignRequest"];
+                "multipart/form-data": components["schemas"]["UnassignRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeliveryDetail"];
+                };
+            };
+        };
+    };
     api_admin_delivery_regions_list: {
         parameters: {
             query?: {
@@ -2077,6 +2498,27 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AdminOrder"];
+                };
+            };
+        };
+    };
+    api_admin_orders_delivery_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                number: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeliveryDetail"];
                 };
             };
         };

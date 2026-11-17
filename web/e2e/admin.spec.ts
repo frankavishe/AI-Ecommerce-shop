@@ -107,7 +107,8 @@ test.describe("US3 admin", () => {
     dialog = page.getByRole("dialog");
     await dialog.getByLabel("New status").selectOption("delivered");
     await dialog.getByRole("button", { name: "Update status" }).click();
-    await expect(dialog.getByRole("alert")).toContainText(/Cannot move an order/);
+    // 005: a paid order has a delivery, so only Deliveries may mark it delivered
+    await expect(dialog.getByRole("alert")).toContainText(/Deliveries/);
     await dialog.getByRole("button", { name: "Cancel" }).click();
     await expect(page.getByTestId("admin-order-status")).toHaveText("Processing");
   });

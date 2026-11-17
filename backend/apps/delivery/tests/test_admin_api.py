@@ -54,6 +54,7 @@ def test_list_filters_and_attention_first(admin, make_order, pay, run_commits, r
     assert {i["id"] for i in admin.get(BASE, {"rider": rider.id}).json()["results"]} == {fresh.id, failed.id}
     assert len(admin.get(BASE, {"region": "Dar es Salaam"}).json()["results"]) == 3
     assert admin.get(BASE, {"region": "Arusha"}).json()["results"] == []
+    assert [i["id"] for i in admin.get(BASE, {"order": fresh.order.number.lower()}).json()["results"]] == [fresh.id]
 
 
 def test_detail_has_events_and_notifications(admin, delivery, rider, admin_user, run_commits):

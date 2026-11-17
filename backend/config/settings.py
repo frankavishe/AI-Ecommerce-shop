@@ -134,6 +134,7 @@ SPECTACULAR_SETTINGS = {
     "COMPONENT_SPLIT_REQUEST": True,
     "ENUM_NAME_OVERRIDES": {
         "OrderStatusEnum": "apps.orders.models.Order.Status",
+        "DeliveryStatusEnum": "apps.delivery.models.Delivery.Status",
         "PaymentStatusEnum": "apps.payments.models.Payment.Status",
         "PaymentMethodEnum": "apps.payments.models.Payment.Method",
         "MobileMoneyNetworkEnum": "apps.payments.stakaba.NETWORKS",

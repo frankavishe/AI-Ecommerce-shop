@@ -8,7 +8,7 @@ from io import BytesIO
 from django.core.files.base import ContentFile
 from PIL import Image
 
-from apps.accounts.models import User
+from apps.accounts.models import RiderProfile, User
 from apps.catalog.models import Category, Product, ProductImage
 from apps.orders.models import DeliveryRegion
 
@@ -71,5 +71,7 @@ def user(username, role, **extra):
 
 user("e2e_customer", User.Role.CUSTOMER, first_name="Amina", last_name="Juma", phone="+255754000111", email="amina@example.com")
 user("e2e_admin", User.Role.ADMIN, first_name="Admin", is_staff=True)
-user("e2e_rider", User.Role.RIDER, first_name="Rider")
+rider = user("e2e_rider", User.Role.RIDER, first_name="Rider", last_name="Juma", phone="+255700000901", is_active=True)
+profile, _ = RiderProfile.objects.update_or_create(user=rider, defaults={"vehicle": "motorbike", "is_available": True})
+profile.regions.set(DeliveryRegion.objects.filter(name="Dar es Salaam"))
 print("e2e seed ok")

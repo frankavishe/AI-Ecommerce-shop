@@ -37,3 +37,10 @@ export type Paginated<T> = { count: number; next?: string | null; previous?: str
 export type AdminProduct = Product & { stock: number; low_stock_threshold: number; is_active: boolean };
 export type AdminOrderEvent = S["AdminOrderEvent"];
 export type AdminPayment = S["AdminPayment"];
+
+// 005 delivery + riders
+export type DeliveryStatus = S["DeliveryStatusEnum"];
+export type DeliveryListItem = S["DeliveryList"];
+export type DeliveryDetail = S["DeliveryDetail"];
+export type DeliveryEvent = S["DeliveryEvent"];
+export type RiderCandidate = S["Candidate"];

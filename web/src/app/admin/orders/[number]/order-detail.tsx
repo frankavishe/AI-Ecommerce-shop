@@ -17,6 +17,9 @@ import { formatDateTime } from "@/lib/dates";
 import { formatTZS } from "@/lib/money";
 import { NEXT_STATUSES, ORDER_STATUSES } from "@/lib/order-status";
 import { adminKeys, useAdminOrder } from "@/lib/queries/admin";
+import { createDelivery, deliveryKeys, useOrderDelivery } from "@/lib/queries/delivery";
+import { DELIVERY_ERRORS } from "@/lib/delivery-status";
+import { DeliveryBadge } from "../../deliveries/delivery-badge";
 import { cn } from "@/lib/utils";
 
 function StatusDialog({ order, open, onOpenChange }: { order: AdminOrder; open: boolean; onOpenChange: (o: boolean) => void }) {
@@ -108,6 +111,45 @@ function StatusDialog({ order, open, onOpenChange }: { order: AdminOrder; open: 
         </form>
       </DialogContent>
     </Dialog>
+  );
+}
+
+/** 005: the order's delivery job (FR-005: create one for orders paid before deliveries existed). */
+function DeliveryLink({ order }: { order: AdminOrder }) {
+  const qc = useQueryClient();
+  const delivery = useOrderDelivery(order.number);
+  const [creating, setCreating] = useState(false);
+  if (delivery.isLoading) return null;
+  if (delivery.data) {
+    return (
+      <div className="flex flex-wrap items-center gap-2 text-sm">
+        <DeliveryBadge status={delivery.data.status} />
+        {delivery.data.rider && <span>{delivery.data.rider.name}</span>}
+        <Link href={`/admin/deliveries/${delivery.data.id}`} className="font-medium text-primary hover:underline">
+          Open delivery
+        </Link>
+      </div>
+    );
+  }
+  if (order.status !== "paid" && order.status !== "processing") return null;
+  const create = async () => {
+    setCreating(true);
+    try {
+      await createDelivery(order.number);
+      qc.invalidateQueries({ queryKey: deliveryKeys.forOrder(order.number) });
+      qc.invalidateQueries({ queryKey: ["admin", "deliveries"] });
+      toast.success("Delivery created. Assign a rider from Deliveries.");
+    } catch (err) {
+      toast.error((err instanceof ApiError && ((err.code && DELIVERY_ERRORS[err.code]) || err.detail)) || "Could not create the delivery.");
+    } finally {
+      setCreating(false);
+    }
+  };
+  return (
+    <Button variant="outline" size="sm" onClick={create} disabled={creating} className="self-start">
+      {creating && <Loader2 className="size-4 animate-spin" />}
+      Create delivery
+    </Button>
   );
 }
 
@@ -280,6 +322,7 @@ export function AdminOrderDetail({ number }: { number: string }) {
           <Panel title="Delivery">
             <p className="text-sm">{[o.street, o.district, o.region].filter(Boolean).join(", ")}</p>
             {o.notes && <p className="rounded-md bg-muted p-2 text-sm">“{o.notes}”</p>}
+            <DeliveryLink order={o} />
           </Panel>
           <Panel title="History">
             <ol className="flex flex-col gap-3">

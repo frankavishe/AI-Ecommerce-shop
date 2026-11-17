@@ -3,6 +3,207 @@ info:
   title: AI Ecommerce Shop API
   version: 0.1.0
 paths:
+  /api/admin/deliveries/:
+    get:
+      operationId: api_admin_deliveries_list
+      description: Render service-layer ShopErrors as {"detail", "code", ...extra}.
+      parameters:
+      - in: query
+        name: attention
+        schema:
+          type: boolean
+      - in: query
+        name: order
+        schema:
+          type: string
+        description: Order number
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - in: query
+        name: region
+        schema:
+          type: string
+      - in: query
+        name: rider
+        schema:
+          type: integer
+      - in: query
+        name: status
+        schema:
+          type: array
+          items:
+            type: string
+            enum:
+            - assigned
+            - cancelled
+            - delivered
+            - failed
+            - on_the_way
+            - picked_up
+            - waiting
+      tags:
+      - admin-deliveries
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedDeliveryListList'
+          description: ''
+  /api/admin/deliveries/{id}/:
+    get:
+      operationId: api_admin_deliveries_retrieve
+      description: Render service-layer ShopErrors as {"detail", "code", ...extra}.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this delivery.
+        required: true
+      tags:
+      - admin-deliveries
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeliveryDetail'
+          description: ''
+  /api/admin/deliveries/{id}/assign/:
+    post:
+      operationId: api_admin_deliveries_assign_create
+      description: Render service-layer ShopErrors as {"detail", "code", ...extra}.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this delivery.
+        required: true
+      tags:
+      - admin-deliveries
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssignRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AssignRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AssignRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeliveryDetail'
+          description: ''
+  /api/admin/deliveries/{id}/candidates/:
+    get:
+      operationId: api_admin_deliveries_candidates_list
+      description: 'Riders for the assign dialog (FR-007): region riders first, then
+        the least busy.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this delivery.
+        required: true
+      tags:
+      - admin-deliveries
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Candidate'
+          description: ''
+  /api/admin/deliveries/{id}/status/:
+    post:
+      operationId: api_admin_deliveries_status_create
+      description: Admin override when the rider can't use the phone.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this delivery.
+        required: true
+      tags:
+      - admin-deliveries
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StatusRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/StatusRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/StatusRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeliveryDetail'
+          description: ''
+  /api/admin/deliveries/{id}/unassign/:
+    post:
+      operationId: api_admin_deliveries_unassign_create
+      description: Render service-layer ShopErrors as {"detail", "code", ...extra}.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this delivery.
+        required: true
+      tags:
+      - admin-deliveries
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UnassignRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UnassignRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UnassignRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeliveryDetail'
+          description: ''
   /api/admin/delivery-regions/:
     get:
       operationId: api_admin_delivery_regions_list
@@ -233,6 +434,27 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AdminOrder'
+          description: ''
+  /api/admin/orders/{number}/delivery/:
+    post:
+      operationId: api_admin_orders_delivery_create
+      description: 'FR-005: a delivery for an order paid before this feature existed.'
+      parameters:
+      - in: path
+        name: number
+        schema:
+          type: string
+        required: true
+      tags:
+      - admin-deliveries
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeliveryDetail'
           description: ''
   /api/admin/orders/{number}/status/:
     post:
@@ -2249,6 +2471,16 @@ paths:
           description: No response body
 components:
   schemas:
+    ActorTypeEnum:
+      enum:
+      - admin
+      - rider
+      - system
+      type: string
+      description: |-
+        * `admin` - Admin
+        * `rider` - Rider
+        * `system` - System
     AddItemRequest:
       type: object
       properties:
@@ -2735,6 +2967,53 @@ components:
       - created_at
       - reference
       - updated_at
+    AssignRequest:
+      type: object
+      properties:
+        rider:
+          type: integer
+        expected_status:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/DeliveryStatusEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        expected_rider:
+          type: integer
+          nullable: true
+      required:
+      - rider
+    Candidate:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+          readOnly: true
+        phone:
+          type: string
+        vehicle:
+          type: string
+        regions:
+          type: array
+          items:
+            type: string
+          readOnly: true
+        is_available:
+          type: boolean
+        open_jobs:
+          type: integer
+        covers_region:
+          type: boolean
+      required:
+      - covers_region
+      - id
+      - is_available
+      - name
+      - open_jobs
+      - phone
+      - regions
+      - vehicle
     Cart:
       type: object
       description: Renders services.cart_totals(cart).
@@ -3048,6 +3327,228 @@ components:
       description: |-
         * `active` - Active
         * `needs_human` - Needs a human
+    DeliveryDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/DeliveryStatusEnum'
+          readOnly: true
+        attempt:
+          type: integer
+          readOnly: true
+        attention:
+          type: boolean
+          readOnly: true
+        order:
+          allOf:
+          - $ref: '#/components/schemas/DeliveryOrder'
+          readOnly: true
+        rider:
+          allOf:
+          - $ref: '#/components/schemas/RiderBrief'
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        events:
+          type: array
+          items:
+            $ref: '#/components/schemas/DeliveryEvent'
+          readOnly: true
+        notifications:
+          type: array
+          items:
+            $ref: '#/components/schemas/DeliveryNotification'
+          readOnly: true
+        failure_reason:
+          type: string
+          readOnly: true
+      required:
+      - attempt
+      - attention
+      - created_at
+      - events
+      - failure_reason
+      - id
+      - notifications
+      - order
+      - rider
+      - status
+      - updated_at
+    DeliveryEvent:
+      type: object
+      properties:
+        status:
+          allOf:
+          - $ref: '#/components/schemas/DeliveryStatusEnum'
+          readOnly: true
+        attempt:
+          type: integer
+          readOnly: true
+        rider:
+          type: string
+          nullable: true
+          readOnly: true
+        actor_type:
+          allOf:
+          - $ref: '#/components/schemas/ActorTypeEnum'
+          readOnly: true
+        actor_name:
+          type: string
+          nullable: true
+          readOnly: true
+        note:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - actor_name
+      - actor_type
+      - attempt
+      - created_at
+      - note
+      - rider
+      - status
+    DeliveryList:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/DeliveryStatusEnum'
+          readOnly: true
+        attempt:
+          type: integer
+          readOnly: true
+        attention:
+          type: boolean
+          readOnly: true
+        order:
+          allOf:
+          - $ref: '#/components/schemas/DeliveryOrder'
+          readOnly: true
+        rider:
+          allOf:
+          - $ref: '#/components/schemas/RiderBrief'
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - attempt
+      - attention
+      - created_at
+      - id
+      - order
+      - rider
+      - status
+      - updated_at
+    DeliveryNotification:
+      type: object
+      properties:
+        kind:
+          allOf:
+          - $ref: '#/components/schemas/DeliveryNotificationKindEnum'
+          readOnly: true
+        attempt:
+          type: integer
+          readOnly: true
+        state:
+          allOf:
+          - $ref: '#/components/schemas/DeliveryNotificationStateEnum'
+          readOnly: true
+        outbound_status:
+          type: string
+          nullable: true
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - attempt
+      - created_at
+      - kind
+      - outbound_status
+      - state
+    DeliveryNotificationKindEnum:
+      enum:
+      - rider_welcome
+      - rider_assigned
+      - rider_removed
+      - rider_cancelled
+      - customer_failed
+      type: string
+      description: |-
+        * `rider_welcome` - Rider welcome
+        * `rider_assigned` - Job assigned
+        * `rider_removed` - Job removed
+        * `rider_cancelled` - Job cancelled
+        * `customer_failed` - Customer: couldn't deliver
+    DeliveryNotificationStateEnum:
+      enum:
+      - queued
+      - skipped
+      - failed
+      type: string
+      description: |-
+        * `queued` - Queued
+        * `skipped` - Skipped
+        * `failed` - Failed
+    DeliveryOrder:
+      type: object
+      properties:
+        number:
+          type: string
+        region:
+          type: string
+        street:
+          type: string
+        contact_name:
+          type: string
+        item_count:
+          type: integer
+          readOnly: true
+        total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        paid_at:
+          type: string
+          format: date-time
+          nullable: true
+        status:
+          type: string
+      required:
+      - contact_name
+      - item_count
+      - number
+      - paid_at
+      - region
+      - status
+      - street
+      - total
     DeliveryRegion:
       type: object
       properties:
@@ -3075,6 +3576,24 @@ components:
       required:
       - default_fee
       - regions
+    DeliveryStatusEnum:
+      enum:
+      - waiting
+      - assigned
+      - picked_up
+      - on_the_way
+      - delivered
+      - failed
+      - cancelled
+      type: string
+      description: |-
+        * `waiting` - Waiting for a rider
+        * `assigned` - Assigned
+        * `picked_up` - Picked up
+        * `on_the_way` - On the way
+        * `delivered` - Delivered
+        * `failed` - Failed
+        * `cancelled` - Cancelled
     Detail:
       type: object
       properties:
@@ -3276,6 +3795,9 @@ components:
         * `AirtelMoney` - AirtelMoney
         * `TigoPesa` - TigoPesa
         * `HaloPesa` - HaloPesa
+    NullEnum:
+      enum:
+      - null
     Order:
       type: object
       properties:
@@ -3662,6 +4184,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Category'
+    PaginatedDeliveryListList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/DeliveryList'
     PaginatedKnowledgeDocumentList:
       type: object
       required:
@@ -4321,6 +4866,25 @@ components:
       - phone
       - user_id
       - username
+    RiderBrief:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+          readOnly: true
+        phone:
+          type: string
+        vehicle:
+          type: string
+          nullable: true
+          readOnly: true
+      required:
+      - id
+      - name
+      - phone
+      - vehicle
     RiderRequest:
       type: object
       description: 'Admin-facing: create and manage riders (user + profile in one
@@ -4421,6 +4985,34 @@ components:
           maxLength: 255
       required:
       - status
+    StatusRequest:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/StatusStatusEnum'
+        note:
+          type: string
+          default: ''
+          maxLength: 255
+        expected_status:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/DeliveryStatusEnum'
+          - $ref: '#/components/schemas/NullEnum'
+      required:
+      - status
+    StatusStatusEnum:
+      enum:
+      - picked_up
+      - on_the_way
+      - delivered
+      - failed
+      type: string
+      description: |-
+        * `picked_up` - picked_up
+        * `on_the_way` - on_the_way
+        * `delivered` - delivered
+        * `failed` - failed
     TemplateEnum:
       enum:
       - follow_up
@@ -4459,6 +5051,12 @@ components:
         * `system` - System
         * `order_update` - Order update
         * `payment` - Payment
+    UnassignRequest:
+      type: object
+      properties:
+        expected_rider:
+          type: integer
+          nullable: true
     User:
       type: object
       properties:

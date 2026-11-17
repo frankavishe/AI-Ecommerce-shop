@@ -63,6 +63,7 @@ def expectations(data, rider_field="expected_rider"):
 LIST_FILTERS = [
     OpenApiParameter("status", OpenApiTypes.STR, many=True, enum=S.values),
     OpenApiParameter("region", OpenApiTypes.STR),
+    OpenApiParameter("order", OpenApiTypes.STR, description="Order number"),
     OpenApiParameter("rider", OpenApiTypes.INT),
     OpenApiParameter("attention", OpenApiTypes.BOOL),
 ]
@@ -83,6 +84,8 @@ class AdminDeliveryViewSet(DeliveryErrorMixin, viewsets.ReadOnlyModelViewSet):
         params = self.request.query_params
         if statuses := params.getlist("status"):
             qs = qs.filter(status__in=statuses)
+        if number := params.get("order"):
+            qs = qs.filter(order__number=number.upper())
         if region := params.get("region"):
             qs = qs.filter(order__region=region)
         if rider := params.get("rider"):
@@ -99,7 +102,7 @@ class AdminDeliveryViewSet(DeliveryErrorMixin, viewsets.ReadOnlyModelViewSet):
         return super().list(request, *args, **kwargs)
 
     @extend_schema(responses=CandidateSerializer(many=True))
-    @action(detail=True, methods=["get"])
+    @action(detail=True, methods=["get"], pagination_class=None)
     def candidates(self, request, pk=None):
         """Riders for the assign dialog (FR-007): region riders first, then the least busy."""
         delivery = self.get_object()
