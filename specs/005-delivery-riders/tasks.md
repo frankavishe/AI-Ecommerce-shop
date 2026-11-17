@@ -158,12 +158,12 @@ rider-tools.md, notifications.md, customer-and-account.md), quickstart.md
 
 ### Tests for US1 (write first; they must fail)
 
-- [ ] T012 [P] [US1] Write `backend/apps/delivery/tests/test_signals.py`:
+- [X] T012 [P] [US1] Write `backend/apps/delivery/tests/test_signals.py`:
   - An order moved to paid creates one waiting delivery.
   - Replaying `paid` (the payment webhook replay path in `apps/payments`) still leaves exactly one.
   - Moving an order with a waiting or assigned delivery to `cancelled` cancels the delivery and records a `cancelled` event with actor_type `system`.
   - Statuses that delivery itself produces (processing, out_for_delivery, delivered) don't re-enter the receiver.
-- [ ] T013 [P] [US1] Write `backend/apps/delivery/tests/test_admin_api.py`:
+- [X] T013 [P] [US1] Write `backend/apps/delivery/tests/test_admin_api.py`:
   - List: filters `status`, `region`, `rider` and `attention=1`; sort with attention first; the item shape follows `contracts/admin-api.md`.
   - Detail includes `events`, `notifications` and `failure_reason`.
   - `candidates`: region riders first, then by open jobs; inactive riders excluded; `is_available` and `covers_region` flags shown.
@@ -172,7 +172,7 @@ rider-tools.md, notifications.md, customer-and-account.md), quickstart.md
   - `status`: admin override, with `note` required for failed.
   - `POST /api/admin/orders/{number}/delivery/`: 201; 409 `exists`; 400 `not_deliverable`.
   - Customers, riders and anonymous users get 403/401 on every endpoint (FR-025).
-- [ ] T014 [P] [US1] Write `backend/apps/delivery/tests/test_notifications.py` (rider part):
+- [X] T014 [P] [US1] Write `backend/apps/delivery/tests/test_notifications.py` (rider part):
   - Assign queues one `delivery_assigned` template to the rider's contact. Use `FakeGraph`, with the parameters order no., region, street, contact name and item count. The contact is created with `wa_id` = the digits of the E.164 number and language = `preferred_language`.
   - Reassign sends `delivery_assigned` to the new rider and `delivery_removed` to the old one.
   - Unassign sends `delivery_removed`.
@@ -181,20 +181,20 @@ rider-tools.md, notifications.md, customer-and-account.md), quickstart.md
   - Rider sends ignore `updates_allowed=False`.
   - Replaying the same change sends nothing twice.
   - A Graph failure marks the notification/outbound row and does not roll back the delivery.
-- [ ] T015 [P] [US1] Write `backend/apps/delivery/tests/test_order_guard.py`. The admin order-status action (`AdminOrderViewSet`) answers 409 `use_deliveries` for `out_for_delivery` and `delivered` when the order has a delivery. `processing` and `cancelled` are still allowed. Orders without a delivery behave as before.
-- [ ] T016 [P] [US1] Write `backend/apps/delivery/tests/test_concurrency.py` (`transaction=True`): two threads assign the same waiting delivery with `expected_status="waiting"`; exactly one succeeds and the other gets `StaleDelivery`.
+- [X] T015 [P] [US1] Write `backend/apps/delivery/tests/test_order_guard.py`. The admin order-status action (`AdminOrderViewSet`) answers 409 `use_deliveries` for `out_for_delivery` and `delivered` when the order has a delivery. `processing` and `cancelled` are still allowed. Orders without a delivery behave as before.
+- [X] T016 [P] [US1] Write `backend/apps/delivery/tests/test_concurrency.py` (`transaction=True`): two threads assign the same waiting delivery with `expected_status="waiting"`; exactly one succeeds and the other gets `StaleDelivery`.
 
 ### Implementation for US1
 
-- [ ] T017 [US1] Implement `backend/apps/delivery/signals.py`. A `post_save` receiver on `orders.OrderEvent` (`dispatch_uid="delivery.order_event"`, created and not raw):
+- [X] T017 [US1] Implement `backend/apps/delivery/signals.py`. A `post_save` receiver on `orders.OrderEvent` (`dispatch_uid="delivery.order_event"`, created and not raw):
   - Status `paid`: `transaction.on_commit(create_for_order)`, then auto-assign if switched on (a stub that US5 fills).
   - Status `cancelled`: `cancel_for_order`.
   - Ignore everything else.
-- [ ] T018 [P] [US1] Write `backend/apps/delivery/texts.py` with sw/en fixed texts:
+- [X] T018 [P] [US1] Write `backend/apps/delivery/texts.py` with sw/en fixed texts:
   - `rider_stop` (the wording in `contracts/rider-tools.md`).
   - Inbox titles `inbox_assigned` / `inbox_removed` / `inbox_cancelled`, taking `{number}`.
   - A `text(key, lang, **kw)` helper, in the same style as `apps/whatsapp/texts.py`.
-- [ ] T019 [US1] Implement `backend/apps/delivery/notifications.py` (rider part):
+- [X] T019 [US1] Implement `backend/apps/delivery/notifications.py` (rider part):
   - `rider_contact(user)`: `WhatsAppContact.objects.get_or_create(phone=e164, defaults={"wa_id": digits, "language": user.preferred_language})`.
   - `notify_rider(delivery, rider, kind)`:
     1. `get_or_create` the `DeliveryNotification(delivery, rider, kind, attempt)` row; stop if it already existed.
@@ -203,19 +203,19 @@ rider-tools.md, notifications.md, customer-and-account.md), quickstart.md
     4. Link `outbound` and `flush(row.batch)`.
   - Register `notify_rider` into `services.NOTIFY_HOOKS` from `DeliveryConfig.ready()`.
   - Make T014 pass.
-- [ ] T020 [US1] Write the admin serializers in `backend/apps/delivery/serializers.py`:
+- [X] T020 [US1] Write the admin serializers in `backend/apps/delivery/serializers.py`:
   - `DeliveryListSerializer`: id, status, attempt, `attention`, nested `order` {number, region, street, contact_name, item_count, total, paid_at, status}, `rider` {id, name, phone, vehicle}, created_at, updated_at.
   - `DeliveryDetailSerializer`: adds `events` [{status, attempt, rider, actor_type, actor_name, note, created_at}], `notifications` [{kind, attempt, state, outbound_status, created_at}] and `failure_reason`.
   - `CandidateSerializer`: {id, name, phone, vehicle, regions, is_available, open_jobs, covers_region}.
   - Input serializers: `AssignSerializer`, `UnassignSerializer`, `StatusSerializer`.
-- [ ] T021 [US1] Implement `backend/apps/delivery/views.py` and `urls.py`. Everything is `IsShopAdmin` and documented with `extend_schema`.
+- [X] T021 [US1] Implement `backend/apps/delivery/views.py` and `urls.py`. Everything is `IsShopAdmin` and documented with `extend_schema`.
   - `AdminDeliveryViewSet` (list/retrieve) at `admin/deliveries/`:
     - Filters: `status` (repeatable), `region`, `rider`, `attention`.
     - `attention` is annotated as failed OR (waiting and `created_at < now - DELIVERY_WAITING_ALERT_MINUTES`). Order by `-attention, created_at`. Paginated.
     - Actions `candidates`, `assign`, `unassign` and `status`, mapping `DeliveryError` codes to 400/409 bodies `{"detail","code"}`. `stale` includes `delivery`.
   - `create-from-order` view at `admin/orders/<number>/delivery/`.
   - Make T013 and T016 pass.
-- [ ] T022 [US1] Add the guard in `backend/apps/orders/views.py`: `AdminOrderViewSet`'s status action refuses `out_for_delivery`/`delivered` with 409 `use_deliveries` when `hasattr(order, "delivery")`. Use a `try` on `Delivery.DoesNotExist` via the related accessor, with no import of `apps.delivery` at module level. Make T015 pass, and check that the 001/002 order tests stay green.
+- [X] T022 [US1] Add the guard in `backend/apps/orders/views.py`: `AdminOrderViewSet`'s status action refuses `out_for_delivery`/`delivered` with 409 `use_deliveries` when `hasattr(order, "delivery")`. Use a `try` on `Delivery.DoesNotExist` via the related accessor, with no import of `apps.delivery` at module level. Make T015 pass, and check that the 001/002 order tests stay green.
 - [ ] T023 [US1] Regenerate the web API types: `npm run gen:api` in `web/`, updating `web/src/lib/api/schema.d.ts`.
 - [ ] T024 [P] [US1] Write `web/src/lib/queries/delivery.ts`. Use TanStack Query hooks through the bff, in the same style as `web/src/lib/queries/admin.ts`:
   - Queries: `useDeliveries(filters)`, `useDelivery(id)`, `useCandidates(id)`.

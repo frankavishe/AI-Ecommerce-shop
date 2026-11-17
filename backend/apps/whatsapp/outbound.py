@@ -134,9 +134,11 @@ def queue_buttons(contact, body, buttons, trigger, conversation=None, staff_user
                   text, trigger, conversation, staff_user, batch)
 
 
-def queue_template(contact, name, params, trigger, conversation=None, staff_user=None, batch=None, text=""):
-    """Approved templates may be sent at any time (no window check)."""
-    template = {"name": name, "language": {"code": contact.language or "sw"}}
+def queue_template(contact, name, params, trigger, conversation=None, staff_user=None, batch=None, text="",
+                   language=None):
+    """Approved templates may be sent at any time (no window check). `language` overrides the
+    contact's language (005: riders get templates in their own preferred language)."""
+    template = {"name": name, "language": {"code": language or contact.language or "sw"}}
     if params:
         template["components"] = [{"type": "body", "parameters": [
             {"type": "text", "text": str(value)} for value in params

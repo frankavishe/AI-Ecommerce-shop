@@ -7,4 +7,7 @@ class DeliveryConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
 
     def ready(self):
-        from . import signals  # noqa: F401  (connects the OrderEvent receiver)
+        from . import notifications, services, signals  # noqa: F401  (signals: the OrderEvent receiver)
+
+        if notifications.deliver_notices not in services.NOTIFY_HOOKS:
+            services.NOTIFY_HOOKS.append(notifications.deliver_notices)

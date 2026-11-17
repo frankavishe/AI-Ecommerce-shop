@@ -222,6 +222,11 @@ def create_for_order(order):
     return Delivery.objects.get_or_create(order=order)
 
 
+def auto_assign(delivery):
+    """Filled in by US5 (FR-008); off by default, so a new delivery waits for the admin."""
+    return None
+
+
 def cancel_for_order(order, actor=None):
     """The order was cancelled: close its open delivery (FR-004). None when there is nothing open."""
     delivery = Delivery.objects.filter(order=order, status__in=OPEN | {S.FAILED}).first()

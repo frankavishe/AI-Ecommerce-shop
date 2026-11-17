@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.core.exceptions import ObjectDoesNotExist
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.http import Http404
 from django.shortcuts import get_object_or_404
@@ -238,6 +239,17 @@ class OrderPayView(APIView):
         })
 
 
+# 005 (research R4): once an order has a delivery, only the delivery moves it to these statuses.
+DELIVERY_STATUSES = {Order.Status.OUT_FOR_DELIVERY, Order.Status.DELIVERED}
+
+
+def _has_delivery(order):
+    try:
+        return order.delivery is not None
+    except ObjectDoesNotExist:
+        return False
+
+
 class AdminOrderViewSet(ShopErrorMixin, viewsets.ReadOnlyModelViewSet):
     permission_classes = [IsShopAdmin]
     lookup_field = "number"
@@ -260,6 +272,9 @@ class AdminOrderViewSet(ShopErrorMixin, viewsets.ReadOnlyModelViewSet):
         change = StatusChangeSerializer(data=request.data)
         change.is_valid(raise_exception=True)
         order = self.get_object()
+        if change.validated_data["status"] in DELIVERY_STATUSES and _has_delivery(order):
+            return Response({"detail": "This order has a delivery: use Deliveries to move it.",
+                             "code": "use_deliveries"}, status=409)
         services.transition(
             order, change.validated_data["status"], OrderEvent.Source.ADMIN,
             actor=request.user, note=change.validated_data["note"],
