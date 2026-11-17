@@ -87,6 +87,11 @@ class ToolContext:
     verified_phone: str | None = None
     phone_orders: object = None
     checkout_summary: dict | None = None
+    # A server-built reply (005): when a tool sets it, it replaces the model's text for this turn.
+    fixed_reply: str | None = None
+
+    def add_reply(self, text):
+        self.fixed_reply = f"{self.fixed_reply}\n\n{text}" if self.fixed_reply else text
 
     @property
     def language(self):

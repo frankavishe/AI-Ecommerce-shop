@@ -4,12 +4,15 @@ The caller is always ctx.user, an active rider: no tool takes a rider id from th
 found only among the rider's own deliveries, and any miss (no such order, someone else's order, a
 closed job) gets the same `not_found`, so nothing leaks about other orders (FR-016, SC-005). The
 agent loop wraps every result in <data>, so customer notes stay data (FR-026).
+
+Each tool also sets ctx.fixed_reply from apps/delivery/texts.py: the rider's reply is built by the
+server from the result, not phrased by the model.
 """
 
 from apps.accounts.models import RiderProfile
 from apps.ai.tools import RIDER, register
 
-from . import services
+from . import services, texts
 from .models import ACTIVE, Delivery
 
 S = Delivery.Status
@@ -22,8 +25,12 @@ def _jobs(ctx, statuses=ACTIVE):
     return Delivery.objects.filter(rider=ctx.user, status__in=statuses).select_related("order")
 
 
+def _number(order_number):
+    return (order_number or "").strip().upper().lstrip("#")
+
+
 def _find(ctx, order_number, statuses=ACTIVE):
-    number = (order_number or "").strip().upper().lstrip("#")
+    number = _number(order_number)
     if not number:
         return None
     return _jobs(ctx, statuses).filter(order__number=number).first()
@@ -35,7 +42,8 @@ def _find(ctx, order_number, statuses=ACTIVE):
     {}, roles=(RIDER,),
 )
 def my_jobs(ctx):
-    jobs = _jobs(ctx).order_by("assigned_at", "id")[:JOB_LIMIT]
+    jobs = list(_jobs(ctx).order_by("assigned_at", "id")[:JOB_LIMIT])
+    ctx.add_reply(texts.jobs_text(jobs, ctx.language))
     return {"jobs": [
         {"order_number": d.order.number, "status": d.status, "region": d.order.region,
          "street": d.order.street, "contact_name": d.order.contact_name,
@@ -53,7 +61,9 @@ def my_jobs(ctx):
 def job_details(ctx, order_number):
     delivery = _find(ctx, order_number)
     if delivery is None:
+        ctx.add_reply(texts.update_text(_number(order_number), NOT_FOUND, ctx.language))
         return NOT_FOUND
+    ctx.add_reply(texts.details_text(delivery, ctx.language))
     order = delivery.order
     return {
         "order_number": order.number, "status": delivery.status,
@@ -76,6 +86,12 @@ def job_details(ctx, order_number):
     label={"sw": "hali ya usafirishaji imesasishwa", "en": "delivery status updated"},
 )
 def update_delivery(ctx, order_number, status, reason=""):
+    result = _update_delivery(ctx, order_number, status, reason)
+    ctx.add_reply(texts.update_text(_number(order_number), result, ctx.language, requested=status))
+    return result
+
+
+def _update_delivery(ctx, order_number, status, reason):
     # a repeat on a just-closed job (delivered twice) must answer "already", not "not found" (FR-017)
     delivery = _find(ctx, order_number, ACTIVE | {status})
     if delivery is None:
@@ -103,4 +119,7 @@ def update_delivery(ctx, order_number, status, reason=""):
 )
 def set_availability(ctx, available):
     RiderProfile.objects.filter(user=ctx.user).update(is_available=available)
-    return {"available": available, "active_jobs": _jobs(ctx).count()}
+    count = _jobs(ctx).count()
+    ctx.add_reply(texts.text("available_on", ctx.language) if available
+                  else texts.text("available_off", ctx.language, count=count))
+    return {"available": available, "active_jobs": count}

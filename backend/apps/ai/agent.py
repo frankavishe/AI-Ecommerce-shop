@@ -39,8 +39,12 @@ class AgentReply:
 _NOTE = re.compile(r"\[(?:Tools used|Products shown)\b[^\]]*\]\s*", re.I)
 
 
+# ...and echo the <data> wrapper of tool results (or invent one, e.g. `<data not_found />`).
+_DATA = re.compile(r"<data\b[^>]*/>|<data\b[^>]*>.*?(?:</data>|$)|</data>", re.S | re.I)
+
+
 def clean_reply(text):
-    return _NOTE.sub("", _THINK.sub("", text or "")).strip()
+    return _DATA.sub("", _NOTE.sub("", _THINK.sub("", text or ""))).strip()
 
 
 def _history(conversation, exclude_id):
@@ -179,6 +183,8 @@ def handle_message(conversation: Conversation, text="", image=None, user=None, l
         logger.warning("Chat model unavailable: %s", exc)
         error = "model_unavailable"
 
+    if ctx.fixed_reply and conversation.state != Conversation.State.NEEDS_HUMAN:
+        reply = ctx.fixed_reply  # a tool built the reply from the database (005 rider texts)
     if not reply:
         reply = prompts.fallback(error or "empty", lang, _completed_actions(calls, lang))
     payload = ctx.payload()

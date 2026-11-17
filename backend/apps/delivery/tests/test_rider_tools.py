@@ -161,3 +161,64 @@ def test_set_availability(ctx_for, rider, jobs):
     jobs[0].refresh_from_db()
     assert jobs[0].rider == rider  # current jobs stay
     assert call(ctx, "set_availability", available=True)["available"] is True
+
+
+# --- Fixed replies: the server, not the model, words every rider reply ----------------------------
+
+
+def test_my_jobs_reply_lists_numbers_and_addresses(ctx_for, rider, jobs):
+    ctx = ctx_for(rider)
+    call(ctx, "my_jobs")
+    lines = ctx.fixed_reply.split("\n")
+    assert lines[0] == "Kazi zako (2):"
+    assert lines[1].startswith(f"• {jobs[0].order.number} – Mtaa wa Uhuru 12")
+    assert lines[1].endswith("(umepewa)")
+
+
+def test_my_jobs_reply_when_empty(ctx_for, rider2):
+    ctx = ctx_for(rider2)
+    call(ctx, "my_jobs")
+    assert ctx.fixed_reply == "Huna kazi kwa sasa."
+
+
+def test_update_replies(ctx_for, rider, rider2, jobs):
+    number = jobs[0].order.number
+    ctx = ctx_for(rider)
+    call(ctx, "update_delivery", order_number=number.lower(), status="picked_up")
+    assert ctx.fixed_reply == f"Sawa, oda {number} imechukuliwa."
+
+    ctx = ctx_for(rider)
+    call(ctx, "update_delivery", order_number=number, status="delivered")
+    call(ctx, "update_delivery", order_number=number, status="delivered")
+    assert ctx.fixed_reply == f"Asante! Oda {number} imefikishwa.\n\nOda {number} tayari iko: imefikishwa."
+
+    other = jobs[1].order.number
+    ctx = ctx_for(rider2)
+    call(ctx, "update_delivery", order_number=other, status="delivered")
+    assert ctx.fixed_reply == f"Oda {other} haipo kwenye kazi zako."
+
+    ctx = ctx_for(rider)
+    call(ctx, "update_delivery", order_number=other, status="failed")
+    assert "eleza kwa nini" in ctx.fixed_reply
+
+
+def test_update_replies_in_english(ctx_for, rider, jobs):
+    ctx = ctx_for(rider)
+    ctx.conversation.language = "en"
+    number = jobs[0].order.number
+    call(ctx, "update_delivery", order_number=number, status="failed", reason="no answer")
+    assert ctx.fixed_reply == f"Order {number} can't be set to \"failed\" now; it is assigned."
+    ctx = ctx_for(rider)
+    ctx.conversation.language = "en"
+    call(ctx, "update_delivery", order_number=number, status="picked_up")
+    call(ctx, "update_delivery", order_number=number, status="failed", reason="no answer")
+    assert ctx.fixed_reply.endswith(f"OK, order {number} is marked as failed. The admin will decide what happens next.")
+
+
+def test_details_and_availability_replies(ctx_for, rider, jobs):
+    ctx = ctx_for(rider)
+    call(ctx, "job_details", order_number=jobs[0].order.number)
+    assert ctx.fixed_reply.startswith(f"Oda {jobs[0].order.number} (umepewa)\nMteja: Amina Juma, +255712345678")
+    ctx = ctx_for(rider)
+    call(ctx, "set_availability", available=False)
+    assert ctx.fixed_reply == "Sawa, hutapewa kazi mpya. Kazi ulizonazo (2) bado ni zako."

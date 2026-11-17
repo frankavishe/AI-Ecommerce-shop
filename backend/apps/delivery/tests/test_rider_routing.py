@@ -39,13 +39,14 @@ def tool_names(request):
 def test_rider_gets_rider_tools_and_prompt(deliver_inbound, chat_model, graph, rider, job):
     number = job.order.number
     chat_model.add([tool_call("update_delivery", order_number=number, status="delivered")],
-                   f"Sawa, oda {number} imefikishwa.")
-    deliver_inbound(wa.text_message(f"nimefikisha {number}", wa_id=RIDER_WA, message_id="wamid.R1"))
+                   "Garbled model text that the rider never sees.")
+    # free-form wording (not a server command), so the model picks the tool
+    deliver_inbound(wa.text_message(f"mteja ameshapokea mzigo wa {number}", wa_id=RIDER_WA, message_id="wamid.R1"))
 
     request = chat_model.requests[0]
     assert tool_names(request) == {"my_jobs", "job_details", "update_delivery", "set_availability"}
     assert "rider" in chat_model.system_prompt(0).lower()
-    assert graph.texts == [f"Sawa, oda {number} imefikishwa."]
+    assert graph.texts == [f"Asante! Oda {number} imefikishwa."]  # the server's fixed text
     job.refresh_from_db()
     job.order.refresh_from_db()
     assert job.status == "delivered" and job.order.status == "delivered"

@@ -185,3 +185,46 @@ def test_reply_drops_copied_history_notes(conversation, chat_model):
     chat_model.add("[Tools used: checkout.] Oda yako iko tayari.")
     reply = agent.handle_message(conversation, "ndiyo")
     assert reply.text == "Oda yako iko tayari."
+
+
+@pytest.mark.parametrize("raw, around", [
+    ("<data not_found />", "Sawa.  Asante"),
+    ('<data source="tool:x">\n{"ok": false}\n</data>', "Sawa.  Asante"),
+    ('<data source="tool:x">{"ok": false}', "Sawa."),  # unterminated: everything after it is data
+])
+def test_clean_reply_strips_data_markup(raw, around):
+    assert agent.clean_reply(raw) == ""
+    assert agent.clean_reply(f"Sawa. {raw} Asante") == around
+
+
+def test_echoed_data_markup_never_reaches_the_shopper(conversation, chat_model):
+    chat_model.add("<data not_found />")
+    reply = agent.handle_message(conversation, "habari")
+    assert "<data" not in reply.text
+    assert reply.text == prompts.fallback("empty", "sw")
+
+
+@pytest.fixture
+def replying_tool():
+    @register("test_fixed", "A tool that builds its own reply.", {})
+    def test_fixed(ctx):
+        ctx.add_reply("Server text one.")
+        ctx.add_reply("Server text two.")
+        return {"done": True}
+
+    yield
+    REGISTRY.pop("test_fixed")
+
+
+def test_fixed_reply_replaces_the_model_text(conversation, chat_model, replying_tool):
+    chat_model.add([tool_call("test_fixed")], "Garbled model wording")
+    reply = agent.handle_message(conversation, "do it")
+    assert reply.text == "Server text one.\n\nServer text two."
+    assert reply.message.text == reply.text
+
+
+def test_fixed_reply_survives_a_model_failure_after_the_tool(conversation, chat_model, replying_tool):
+    chat_model.add([tool_call("test_fixed")], ModelUnavailable("down"))
+    reply = agent.handle_message(conversation, "do it")
+    assert reply.error == "model_unavailable"
+    assert reply.text == "Server text one.\n\nServer text two."
