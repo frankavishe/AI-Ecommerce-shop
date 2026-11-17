@@ -978,6 +978,8 @@ export interface components {
             readonly updated_at: string;
             readonly last_message: string | null;
             readonly whatsapp: components["schemas"]["WhatsAppBlock"] | null;
+            /** @description 005: a delivery rider's WhatsApp conversation (shown with a "rider" badge). */
+            readonly is_rider: boolean;
         };
         AdminConversationDetail: {
             /** Format: uuid */
@@ -994,6 +996,8 @@ export interface components {
             readonly updated_at: string;
             readonly last_message: string | null;
             readonly whatsapp: components["schemas"]["WhatsAppBlock"] | null;
+            /** @description 005: a delivery rider's WhatsApp conversation (shown with a "rider" badge). */
+            readonly is_rider: boolean;
             readonly messages: components["schemas"]["AdminMessage"][];
         };
         AdminDeliveryRegion: {

@@ -150,11 +150,17 @@ class AdminConversationSerializer(serializers.ModelSerializer):
     user = serializers.SlugRelatedField(slug_field="username", read_only=True)
     last_message = serializers.CharField(read_only=True, allow_null=True, default=None)
     whatsapp = serializers.SerializerMethodField()
+    is_rider = serializers.SerializerMethodField()
 
     class Meta:
         model = Conversation
         fields = ["id", "channel", "state", "language", "handoff_reason", "user", "created_at", "updated_at",
-                  "last_message", "whatsapp"]
+                  "last_message", "whatsapp", "is_rider"]
+
+    def get_is_rider(self, conversation) -> bool:
+        """005: a delivery rider's WhatsApp conversation (shown with a "rider" badge)."""
+        user = conversation.user
+        return user is not None and user.role == "rider"
 
     @extend_schema_field(WhatsAppBlockSerializer(allow_null=True))
     def get_whatsapp(self, conversation):

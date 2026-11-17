@@ -33,6 +33,9 @@ from .models import Conversation
 
 GUEST, CUSTOMER = "guest", "customer"
 ALL_ROLES = (GUEST, CUSTOMER)
+# 005: delivery riders on WhatsApp get only their own tools (apps/delivery/rider_tools.py); they are
+# never part of ALL_ROLES, so riders never see shopping tools and shoppers never see rider tools.
+RIDER = "rider"
 
 REGISTRY = {}
 

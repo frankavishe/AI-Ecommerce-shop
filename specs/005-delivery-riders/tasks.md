@@ -246,7 +246,7 @@ rider-tools.md, notifications.md, customer-and-account.md), quickstart.md
 
 ### Tests for US2 (write first; they must fail)
 
-- [ ] T030 [P] [US2] Write `backend/apps/delivery/tests/test_rider_tools.py`, calling the tools through `ai.tools.run_tool` with `ToolContext(role=RIDER, user=rider)`:
+- [X] T030 [P] [US2] Write `backend/apps/delivery/tests/test_rider_tools.py`, calling the tools through `ai.tools.run_tool` with `ToolContext(role=RIDER, user=rider)`:
   - `my_jobs` returns only ACTIVE jobs of this rider, oldest first, at most 10.
   - `job_details` returns the contract fields, with `notes` inside the data wrapper.
   - `update_delivery` returns, according to the case:
@@ -260,7 +260,7 @@ rider-tools.md, notifications.md, customer-and-account.md), quickstart.md
   - A job reassigned between lookup and lock gives `not_yours_anymore`.
   - `set_availability` toggles `is_available` and returns `active_jobs`.
   - The rider role never sees customer tools, and the customer roles never see rider tools.
-- [ ] T031 [P] [US2] Write `backend/apps/delivery/tests/test_rider_routing.py`, driving the 004 pipeline with `whatsapp.processing.process` on inbound rows from a rider's number, with fake models:
+- [X] T031 [P] [US2] Write `backend/apps/delivery/tests/test_rider_routing.py`, driving the 004 pipeline with `whatsapp.processing.process` on inbound rows from a rider's number, with fake models:
   - An active rider gets `role="rider"` and the rider prompt, and the conversation's `user` is the rider.
   - A deactivated rider, or a rider whose profile is gone, is served as a customer.
   - STOP from an active rider answers `rider_stop` and leaves `updates_allowed` unchanged.
@@ -270,29 +270,29 @@ rider-tools.md, notifications.md, customer-and-account.md), quickstart.md
 
 ### Implementation for US2
 
-- [ ] T032 [US2] Additive changes in `backend/apps/ai/tools.py`:
+- [X] T032 [US2] Additive changes in `backend/apps/ai/tools.py`:
   - Add `RIDER = "rider"`, and keep `ALL_ROLES = (GUEST, CUSTOMER)`.
   - Make sure `tools_for(RIDER)` returns only the tools registered with `roles=(RIDER,)`, and `run_tool` refuses tools from another role.
-- [ ] T033 [US2] Additive changes in `backend/apps/ai/prompts.py` and `backend/apps/ai/agent.py`:
+- [X] T033 [US2] Additive changes in `backend/apps/ai/prompts.py` and `backend/apps/ai/agent.py`:
   - Add a sw/en `RIDER_PROMPT` with the rules in `contracts/rider-tools.md`.
   - `system_prompt(language, no_think=False, history_notes="", role=None)` returns the rider prompt when `role == "rider"`.
   - `handle_message(..., *, role=None)` overrides the login-derived role when given, passes it to `ToolContext` and `system_prompt`, and records it in the message payload meta.
   - Customer behaviour is unchanged; `pytest apps/ai` must stay green.
-- [ ] T034 [US2] Implement `backend/apps/delivery/rider_tools.py` and import it in `DeliveryConfig.ready()`. Register `my_jobs`, `job_details(order_number)`, `update_delivery(order_number, status enum, reason?)` (`mutates=True`) and `set_availability(available)` with `roles=(RIDER,)`.
+- [X] T034 [US2] Implement `backend/apps/delivery/rider_tools.py` and import it in `DeliveryConfig.ready()`. Register `my_jobs`, `job_details(order_number)`, `update_delivery(order_number, status enum, reason?)` (`mutates=True`) and `set_availability(available)` with `roles=(RIDER,)`.
   - Each tool normalizes the number to upper case and looks the job up with `Delivery.objects.filter(order__number=…, rider=ctx.user, status__in=ACTIVE)`.
   - Writes go through `services.change(..., actor=ctx.user, actor_type="rider", expect={"rider": ctx.user})`.
   - Results are wrapped with `prompts.wrap_data`.
   - Make T030 pass.
-- [ ] T035 [US2] Additive changes in `backend/apps/whatsapp/processing.py`:
+- [X] T035 [US2] Additive changes in `backend/apps/whatsapp/processing.py`:
   - Add a `ROLE_RESOLVERS = []` extension list and a `rider: User | None = None` field on `Job`.
   - In `_process`, after `current_conversation`, set `job.rider` from the first resolver that returns a user.
   - `run_turn` and `record` pass `user=job.rider or contact.user` and `role="rider" if job.rider else None`.
   - When `job.rider` is set, skip `phone_orders` and `verified_phone`.
-- [ ] T036 [US2] Register the delivery hooks from `DeliveryConfig.ready()` in `backend/apps/delivery/apps.py`:
+- [X] T036 [US2] Register the delivery hooks from `DeliveryConfig.ready()` in `backend/apps/delivery/apps.py`:
   - Append `lambda job: riders.rider_for_contact(job.contact)` to `ROLE_RESOLVERS`.
   - Insert a `rider_stop_control(job)` handler (in `backend/apps/delivery/riders.py`) into `CONTROL_HANDLERS` before `updates_control`. It answers the STOP words from an active rider with `texts.rider_stop` through `processing.reply_fixed`/`send_system`.
   - Make T031 pass.
-- [ ] T037 [US2] Add a "rider" badge field to the 003 admin conversation serializer in `backend/apps/ai/serializers.py` (`is_rider`, true when the conversation user has `role=rider`; additive). Show it in the existing admin conversations list on the web, if that list exists. Regenerate the types.
+- [X] T037 [US2] Add a "rider" badge field to the 003 admin conversation serializer in `backend/apps/ai/serializers.py` (`is_rider`, true when the conversation user has `role=rider`; additive). Show it in the existing admin conversations list on the web, if that list exists. Regenerate the types.
 
 **Checkpoint (MVP)**: US1 + US2 green. Full backend suite green. Manual simulator flow from quickstart §2 steps 2–4.
 

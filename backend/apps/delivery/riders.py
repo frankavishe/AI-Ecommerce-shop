@@ -30,3 +30,25 @@ def rider_for_contact(contact):
     if not contact.phone:
         return None
     return active_riders().select_related("rider_profile").filter(phone=contact.phone).first()
+
+
+def resolve_rider(job):
+    """whatsapp.processing.ROLE_RESOLVERS hook."""
+    return rider_for_contact(job.contact)
+
+
+def rider_stop_control(job):
+    """CONTROL_HANDLERS hook, ahead of updates_control: an active rider can't switch job messages
+    off with STOP; they are told to ask the admin instead (edge case "rider sends STOP")."""
+    from apps.whatsapp import processing
+    from apps.whatsapp.models import WhatsAppInboundMessage as Inbound
+
+    from . import texts
+
+    if job.rider is None or job.inbound.type != Inbound.Type.TEXT:
+        return None
+    if (job.inbound.text or "").strip().lower() not in processing.STOP_WORDS:
+        return None
+    processing.record(job)
+    processing.send_system(job, texts.text("rider_stop", job.lang))
+    return Inbound.Status.ANSWERED, ""

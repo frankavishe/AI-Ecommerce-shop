@@ -7,7 +7,13 @@ class DeliveryConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
 
     def ready(self):
-        from . import notifications, services, signals  # noqa: F401  (signals: the OrderEvent receiver)
+        from apps.whatsapp import processing
+
+        from . import notifications, rider_tools, riders, services, signals  # noqa: F401  (registrations)
 
         if notifications.deliver_notices not in services.NOTIFY_HOOKS:
             services.NOTIFY_HOOKS.append(notifications.deliver_notices)
+        if riders.resolve_rider not in processing.ROLE_RESOLVERS:
+            processing.ROLE_RESOLVERS.append(riders.resolve_rider)
+        if riders.rider_stop_control not in processing.CONTROL_HANDLERS:
+            processing.CONTROL_HANDLERS.insert(0, riders.rider_stop_control)

@@ -2596,9 +2596,15 @@ components:
           - $ref: '#/components/schemas/WhatsAppBlock'
           nullable: true
           readOnly: true
+        is_rider:
+          type: boolean
+          description: '005: a delivery rider''s WhatsApp conversation (shown with
+            a "rider" badge).'
+          readOnly: true
       required:
       - created_at
       - id
+      - is_rider
       - last_message
       - updated_at
       - user
@@ -2640,6 +2646,11 @@ components:
           - $ref: '#/components/schemas/WhatsAppBlock'
           nullable: true
           readOnly: true
+        is_rider:
+          type: boolean
+          description: '005: a delivery rider''s WhatsApp conversation (shown with
+            a "rider" badge).'
+          readOnly: true
         messages:
           type: array
           items:
@@ -2648,6 +2659,7 @@ components:
       required:
       - created_at
       - id
+      - is_rider
       - last_message
       - messages
       - updated_at

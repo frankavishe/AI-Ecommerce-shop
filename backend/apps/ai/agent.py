@@ -85,13 +85,14 @@ EMPTY_PAYLOAD = {"products": [], "cart": None, "order": None, "payment": None}
 
 
 def handle_message(conversation: Conversation, text="", image=None, user=None, language=None, *,
-                   verified_phone=None, phone_orders=None, meta=None, record_only=False):
+                   verified_phone=None, phone_orders=None, meta=None, record_only=False, role=None):
     """Store the shopper's message, run the model with role-scoped tools, store and return the reply.
 
     Channel hooks (004, all optional): `verified_phone` is a phone the channel vouches for (offered
     as the checkout phone); `phone_orders` is a queryset of orders this shopper may look up without
     the phone; `meta` is stored in the user message's payload; `record_only` saves the message
-    without running the model (the reply's `message` is then None).
+    without running the model (the reply's `message` is then None). `role` (005) overrides the role
+    derived from the login: "rider" gives the rider prompt and only the rider tools.
     """
     started = _now()
     deadline = started + settings.AI_CHAT_TIMEOUT
@@ -122,12 +123,12 @@ def handle_message(conversation: Conversation, text="", image=None, user=None, l
 
     authenticated = user is not None and user.is_authenticated
     ctx = ToolContext(conversation=conversation, user=user if authenticated else None,
-                      role=CUSTOMER if authenticated else GUEST, image_bytes=image_bytes,
+                      role=role or (CUSTOMER if authenticated else GUEST), image_bytes=image_bytes,
                       verified_phone=verified_phone, phone_orders=phone_orders)
     tools = [tool.spec() for tool in tools_for(ctx.role)]
     history, notes = _history(conversation, incoming.pk)
     messages = [
-        {"role": "system", "content": prompts.system_prompt(lang, settings.AI_CHAT_NO_THINK, notes)},
+        {"role": "system", "content": prompts.system_prompt(lang, settings.AI_CHAT_NO_THINK, notes, role=ctx.role)},
         *history,
         {"role": "user", "content": _user_content(text, image_bytes is not None)},
     ]

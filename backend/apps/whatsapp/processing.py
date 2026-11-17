@@ -37,6 +37,11 @@ class Job:
     inbound: Inbound
     conversation: Conversation | None = None
     notes: list = field(default_factory=list)  # server texts sent before the reply (e.g. cart pruned)
+    rider: object = None  # 005: the active rider behind this number (set by ROLE_RESOLVERS)
+
+    @property
+    def user(self):
+        return self.rider or self.contact.user
 
     @property
     def lang(self):
@@ -83,6 +88,7 @@ def _process(job):
     job.conversation, pruned = current_conversation(contact, previous)
     if pruned:
         job.notes.append(texts.text("cart_pruned", job.lang, names=", ".join(pruned)))
+    resolve_role(job)
 
     for handler in CONTROL_HANDLERS:
         result = handler(job)
@@ -169,6 +175,20 @@ def rate_limited(job):
 # --- Running a turn -------------------------------------------------------------------------------
 
 
+def resolve_role(job):
+    """005 (research R6): the first ROLE_RESOLVERS hook that returns a user makes this number a rider;
+    the conversation then belongs to the rider and the assistant runs with the rider tools."""
+    for resolver in ROLE_RESOLVERS:
+        rider = resolver(job)
+        if rider is not None:
+            job.rider = rider
+            conversation = job.conversation
+            if conversation is not None and conversation.user_id != rider.pk:
+                conversation.user = rider
+                conversation.save(update_fields=["user", "updated_at"])
+            return
+
+
 def meta(job, **extra):
     return {"whatsapp": {"type": job.inbound.type, "wa_message_id": job.inbound.wa_message_id, **extra}}
 
@@ -176,7 +196,7 @@ def meta(job, **extra):
 def record(job, text=None, image=None, **meta_extra):
     """Save the shopper's message to the conversation without answering it."""
     reply = agent.handle_message(job.conversation, text=job.inbound.text if text is None else text,
-                                 image=image, user=job.contact.user, meta=meta(job, **meta_extra),
+                                 image=image, user=job.user, meta=meta(job, **meta_extra),
                                  record_only=True)
     job.inbound.chat_message = reply.incoming
     return reply
@@ -185,10 +205,14 @@ def record(job, text=None, image=None, **meta_extra):
 def run_turn(job, text, image=None, language=None, prefix="", **meta_extra):
     """Run the 003 assistant on one message and send its reply. Returns (status, error)."""
     contact, conversation = job.contact, job.conversation
-    reply = agent.handle_message(
-        conversation, text=text, image=image, user=contact.user, language=language,
-        verified_phone=contact.phone, phone_orders=phone_orders(contact), meta=meta(job, **meta_extra),
-    )
+    if job.rider is not None:  # 005: rider tools only; no checkout phone, no order lookups
+        reply = agent.handle_message(conversation, text=text, image=image, user=job.rider, language=language,
+                                     meta=meta(job, **meta_extra), role="rider")
+    else:
+        reply = agent.handle_message(
+            conversation, text=text, image=image, user=contact.user, language=language,
+            verified_phone=contact.phone, phone_orders=phone_orders(contact), meta=meta(job, **meta_extra),
+        )
     job.inbound.chat_message = reply.incoming
     conversation.refresh_from_db()
     for hook in AFTER_TURN:
@@ -433,7 +457,9 @@ TYPE_HANDLERS = {
     Inbound.Type.UNSUPPORTED: handle_unsupported,
 }
 
-# Extension points: control words (before the assistant), after-turn bookkeeping, reply extras.
+# Extension points: control words (before the assistant), after-turn bookkeeping, reply extras,
+# and (005) role resolvers that turn a number into a rider: callable(job) -> User | None.
+ROLE_RESOLVERS = []
 CONTROL_HANDLERS = [updates_control]
 AFTER_TURN = []
 REPLY_EXTRAS = []
